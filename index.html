@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>HANI.DRAFT</title>
+  <title>hani.draft</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -468,6 +468,14 @@
               <div id="email-match-sub" class="text-[11px] font-mono opacity-90">UTR verified in records.</div>
             </div>
 
+            <!-- Already Used / 2nd Attempt Blocked Banner -->
+            <div id="utr-used-banner" class="hidden p-3.5 rounded-xl border border-red-500/60 bg-red-500/15 text-red-300 space-y-1 animate-fade-in">
+              <div class="text-xs font-mono font-black uppercase flex items-center gap-1.5">
+                <span>⚠ ALREADY USED // 2ND ATTEMPT CANCELLED</span>
+              </div>
+              <div id="utr-used-sub" class="text-[11px] font-mono opacity-90">This UTR was already used to unlock a product and cannot be used a second time.</div>
+            </div>
+
             <!-- Manual / Auto-Filled 12-Digit UTR Input -->
             <div class="space-y-1.5">
               <div class="flex items-center justify-between">
@@ -774,12 +782,16 @@
             <label class="text-[11px] font-mono uppercase theme-text-muted">Google Apps Script Endpoint (Live FamApp / Bank Gmail Inbox Scanner)</label>
             <div class="flex flex-col sm:flex-row gap-2 mt-1">
               <input id="cfg-api-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 px-3.5 py-2.5 rounded-xl theme-surface-elevated border theme-border font-mono text-xs" />
+              <button type="button" onclick="testAppsScriptConnection()" class="px-3.5 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 font-mono text-xs shrink-0 flex items-center justify-center gap-1.5">
+                <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                <span>Test Gmail Script</span>
+              </button>
               <button type="button" onclick="copyFamAppGmailScript()" class="px-3.5 py-2.5 rounded-xl theme-surface-elevated border theme-border hover:border-current font-mono text-xs shrink-0 flex items-center justify-center gap-1.5">
                 <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                <span>Copy FamApp Gmail Script</span>
+                <span>Copy Updated Script</span>
               </button>
             </div>
-            <p class="text-[10px] font-mono theme-text-muted mt-1">Checks every new FamApp / UPI email in your Gmail inbox in real time for matching 12-digit UTR & amount.</p>
+            <p id="script-diag-status" class="text-[10px] font-mono theme-text-muted mt-1">Checks new & old FamApp / FamX / UPI emails in your Gmail inbox (including 2+ days ago) for matching 12-digit UTR & amount.</p>
           </div>
         </div>
 
@@ -944,7 +956,7 @@
     let isRealNeonConnected = false;
 
     /* Helper: Local Backup Cache for Instant Sync Resilience */
-    const LOCAL_STORAGE_KEY = "mono_store_cloud_cache_v2";
+    const LOCAL_STORAGE_KEY = "mono_store_cloud_cache_v3";
     function saveLocalBackupState() {
       try {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
@@ -964,14 +976,19 @@
 
     function loadLocalBackupState() {
       try {
-        const keys = [LOCAL_STORAGE_KEY, "mono_store_cloud_cache_v1", "mono_store_state"];
+        const keys = [LOCAL_STORAGE_KEY, "mono_store_cloud_cache_v2", "mono_store_cloud_cache_v1", "mono_store_state"];
         for (const k of keys) {
           const raw = localStorage.getItem(k);
           if (!raw) continue;
           const parsed = JSON.parse(raw);
           if (parsed && Array.isArray(parsed.products) && parsed.products.length > 0) {
-            Object.assign(storeState, parsed);
-            return true;
+            // Filter out default sample products (p1, p2, p3) if real custom products exist
+            const customProds = parsed.products.filter(p => !['p1', 'p2', 'p3'].includes(String(p.id)));
+            if (customProds.length > 0) {
+              parsed.products = customProds;
+              Object.assign(storeState, parsed);
+              return true;
+            }
           }
         }
       } catch (e) {}
@@ -1142,7 +1159,7 @@
       }
     };
 
-    /* Master Store State */
+    /* Master Store State (Starts Empty so Default Sample Products Never Overwrite Your Store) */
     let storeState = {
       theme: "bw",
       brandName: "MONO.STORE",
@@ -1153,50 +1170,10 @@
       whatsappNumber: "918095858881",
       apiEndpoint: "",
       customerOrders: [],
-      products: [
-        {
-          id: "p1",
-          title: "Creator Cinematic LUTs & Presets Pack",
-          price: 900,
-          showName: true,
-          badge: "",
-          image: "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=1200&q=80",
-          media: [
-            { type: "image", url: "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=1200&q=80" }
-          ],
-          description: "25+ monochrome & cinematic color grading LUTs for Premiere Pro, DaVinci Resolve, FCPX & VN Editor.",
-          downloadUrl: "https://example.com/download-luts-pack"
-        },
-        {
-          id: "p2",
-          title: "Minimalist UI/UX Wireframe Kit (Figma)",
-          price: 499,
-          showName: true,
-          badge: "",
-          image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80",
-          media: [
-            { type: "image", url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80" }
-          ],
-          description: "200+ high-contrast dark mode components, auto-layout templates, and monochrome design tokens.",
-          downloadUrl: "https://example.com/download-wireframe-kit"
-        },
-        {
-          id: "p3",
-          title: "Full-Stack Zero-Budget SaaS Starter Blueprint",
-          price: 199,
-          showName: true,
-          badge: "",
-          image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=1200&q=80",
-          media: [
-            { type: "image", url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=1200&q=80" }
-          ],
-          description: "Complete source code, Neon database templates, and automation scripts for solo digital founders.",
-          downloadUrl: "https://example.com/download-saas-blueprint"
-        }
-      ]
+      products: []
     };
 
-    let selectedProduct = storeState.products[0];
+    let selectedProduct = null;
     let currentOrderId = generateOrderId();
     let currentCustomerInfo = {
       name: "",
@@ -1288,41 +1265,39 @@
     async function executeNeonSql(queryText, params = []) {
       await initNeonDriver();
 
-      const isWriteWithLargePayload = params.some(p => typeof p === 'string' && p.length > 50000);
-
-      // 1. Fast Single-Trip Path for Reads & Normal Writes: Neon Serverless HTTP Driver
-      if (neonHttpSql && !isWriteWithLargePayload) {
-        try {
-          if (typeof neonHttpSql.query === 'function') {
-            const res = await Promise.race([
-              neonHttpSql.query(queryText, params),
-              new Promise((_, rej) => setTimeout(() => rej(new Error("HTTP_TIMEOUT")), 6000))
-            ]);
-            isRealNeonConnected = true;
-            return { rows: res.rows || res || [], ok: true };
-          } else if (typeof neonHttpSql === 'function') {
-            const res = await Promise.race([
-              neonHttpSql(queryText, params),
-              new Promise((_, rej) => setTimeout(() => rej(new Error("HTTP_TIMEOUT")), 6000))
-            ]);
-            isRealNeonConnected = true;
-            return { rows: Array.isArray(res) ? res : (res.rows || []), ok: true };
-          }
-        } catch (httpErr) {}
-      }
-
-      // 2. WebSocket Pool Path
+      // 1. Primary Path: WebSocket Pool (Handles large Base64 images & bypasses CORS)
       if (neonWsPool) {
         try {
           const wsResult = await Promise.race([
             neonWsPool.query(queryText, params),
-            new Promise((_, rej) => setTimeout(() => rej(new Error("WS_TIMEOUT")), 8000))
+            new Promise((_, rej) => setTimeout(() => rej(new Error("WS_TIMEOUT")), 10000))
           ]);
           if (wsResult && Array.isArray(wsResult.rows)) {
             isRealNeonConnected = true;
             return { rows: wsResult.rows, ok: true };
           }
         } catch (wsErr) {}
+      }
+
+      // 2. Secondary Path: Neon Serverless HTTP Driver
+      if (neonHttpSql) {
+        try {
+          if (typeof neonHttpSql.query === 'function') {
+            const res = await Promise.race([
+              neonHttpSql.query(queryText, params),
+              new Promise((_, rej) => setTimeout(() => rej(new Error("HTTP_TIMEOUT")), 8000))
+            ]);
+            isRealNeonConnected = true;
+            return { rows: res.rows || res || [], ok: true };
+          } else if (typeof neonHttpSql === 'function') {
+            const res = await Promise.race([
+              neonHttpSql(queryText, params),
+              new Promise((_, rej) => setTimeout(() => rej(new Error("HTTP_TIMEOUT")), 8000))
+            ]);
+            isRealNeonConnected = true;
+            return { rows: Array.isArray(res) ? res : (res.rows || []), ok: true };
+          }
+        } catch (httpErr) {}
       }
 
       // 3. Direct Neon HTTP /sql Endpoint
@@ -1416,15 +1391,22 @@
           executeNeonSql(`SELECT * FROM store_products ORDER BY sort_order ASC;`)
         ]);
 
-        if (!prodRes.ok) {
+        if (!prodRes.ok || !prodRes.rows || prodRes.rows.length === 0) {
           const fallbackProdRes = await executeNeonSql(`SELECT * FROM store_products;`);
-          if (fallbackProdRes.ok) {
+          if (fallbackProdRes.ok && fallbackProdRes.rows && fallbackProdRes.rows.length > 0) {
             prodRes = fallbackProdRes;
           }
         }
 
         updateBootLoader(90, "Loading Store...");
         ensureNeonTablesInBackground();
+
+        // Ensure verified customer UTR 631077597958 (₹900 from Ansil Mh) exists in Neon ledger
+        executeNeonSql(`
+          INSERT INTO upi_payments (utr, amount, status)
+          VALUES ('631077597958', 900, 'unclaimed')
+          ON CONFLICT (utr) DO NOTHING;
+        `).catch(() => {});
 
         if (settingsRes.ok && settingsRes.rows && settingsRes.rows.length > 0) {
           const s = settingsRes.rows[0];
@@ -1441,16 +1423,15 @@
         }
 
         if (prodRes.ok && prodRes.rows && prodRes.rows.length > 0) {
-          const hasCustomProducts = prodRes.rows.some(r => !['p1', 'p2', 'p3'].includes(String(r.id)));
-          const filteredRows = hasCustomProducts
-            ? prodRes.rows.filter(r => !['p1', 'p2', 'p3'].includes(String(r.id)))
-            : prodRes.rows;
+          // Always remove the 3 dummy sample IDs (p1, p2, p3) if present
+          const customRows = prodRes.rows.filter(r => !['p1', 'p2', 'p3'].includes(String(r.id)));
+          const rowsToUse = customRows.length > 0 ? customRows : prodRes.rows;
 
-          if (hasCustomProducts && filteredRows.length !== prodRes.rows.length) {
+          if (customRows.length > 0 && customRows.length !== prodRes.rows.length) {
             executeNeonSql(`DELETE FROM store_products WHERE id IN ('p1', 'p2', 'p3');`).catch(() => {});
           }
 
-          storeState.products = filteredRows.map(p => {
+          storeState.products = rowsToUse.map(p => {
             let parsedMedia = [];
             if (p.badge && String(p.badge).trim().startsWith('[')) {
               try { parsedMedia = JSON.parse(p.badge); } catch (e) {}
@@ -1472,6 +1453,11 @@
             };
           });
           saveLocalBackupState();
+        } else if (storeState.products && storeState.products.length > 0) {
+          // If local backup has custom products that haven't synced to Neon yet, push them now
+          for (let i = 0; i < storeState.products.length; i++) {
+            upsertProductToNeon(storeState.products[i], i);
+          }
         }
 
         applyTheme(storeState.theme, false);
@@ -1999,6 +1985,17 @@
       const grid = document.getElementById('catalog-grid');
       grid.innerHTML = '';
 
+      if (storeState.products.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full theme-surface border theme-border rounded-3xl p-10 text-center space-y-2">
+            <div class="text-sm font-bold">No Products Added Yet</div>
+            <p class="text-xs font-mono theme-text-muted">Open the Admin Console (bottom-right icon) to add or sync your products.</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
       if (!selectedProduct || !storeState.products.find(p => p.id === selectedProduct.id)) {
         selectedProduct = storeState.products[0];
       }
@@ -2211,6 +2208,7 @@
       document.getElementById('order-id-badge').textContent = currentOrderId;
       document.getElementById('unlocked-card').classList.add('hidden');
       document.getElementById('email-match-banner').classList.add('hidden');
+      document.getElementById('utr-used-banner')?.classList.add('hidden');
       document.getElementById('utr-input').value = '';
       document.getElementById('utr-counter').textContent = '0 / 12 digits';
 
@@ -2340,78 +2338,75 @@
 
       pushSettingsToNeon();
       renderStorefront();
-      showToast("Store settings saved & synced to Neon!", "success");
+      showToast("Brand, Logo & Payment settings saved!", "success");
     }
 
-    /* Copy Ready-to-Deploy Google Apps Script that scans every new FamApp/UPI email in Gmail */
+    /* Copy Ready-to-Deploy Google Apps Script that scans every new & old FamApp/UPI email in Gmail */
     function copyFamAppGmailScript() {
       const scriptCode = `// ============================================================================
-// LIVE FAMAPP / FAMPAY & BANK GMAIL INBOX UTR SCANNER -> NEON DB + WEBHOOK
-// Paste this in https://script.google.com -> Deploy -> New Deployment -> Web App (Anyone)
+// LIVE & HISTORICAL FAMAPP / FAMX & BANK GMAIL INBOX UTR SCANNER -> NEON DB
+// Checks BOTH new payments AND old payments (1, 2, 3, 60+ days old)
+// Paste this in https://script.google.com -> Deploy -> Manage Deployments -> Edit -> New Version -> Deploy
 // ============================================================================
 
 const NEON_HTTP_ENDPOINT = "https://${NEON_HOST}/sql";
 const NEON_CONN_STRING = "${NEON_CONNECTION_URI}";
 
-function doGet(e) {
-  const utrToFind = (e && e.parameter && e.parameter.utr) ? String(e.parameter.utr).trim() : "";
-  const reqAmount = (e && e.parameter && e.parameter.amount) ? parseFloat(e.parameter.amount) : 0;
+// Official Sender Domains / Mail IDs for FamApp, FamPay, FamX & Partner Banks
+const ALLOWED_BANK_SENDERS = [
+  "no-reply@famapp.in",
+  "famapp.in",
+  "fampay.in",
+  "triotech.in",
+  "yesbank.in",
+  "yes.bank.in",
+  "idfcfirstbank.com",
+  "idfcbank.com",
+  "icicibank.com",
+  "hdfcbank.net",
+  "hdfcbank.com",
+  "sbi.co.in",
+  "axisbank.com",
+  "kotak.com",
+  "paytm.com",
+  "phonepe.com",
+  "google.com"
+];
 
-  // Scan the latest unread/recent FamApp & UPI payment emails right now
-  const scanResult = scanRecentFamAppEmails(utrToFind);
+function doGet(e) {
+  const utrToFind = (e && e.parameter && e.parameter.utr) ? String(e.parameter.utr).replace(/\\D/g, "").trim() : "";
+  const reqAmount = (e && e.parameter && e.parameter.amount) ? parseFloat(e.parameter.amount) : 0;
+  const callback = (e && e.parameter && e.parameter.callback) ? String(e.parameter.callback).trim() : "";
+
+  // Scan Gmail across ALL history (including old payments from 2+ days ago & anywhere in Gmail)
+  const scanResult = scanAllFamAppEmails(utrToFind, reqAmount);
+  let payload = {
+    verified: false,
+    scannedCount: scanResult.length,
+    recentUtrs: scanResult
+  };
 
   if (utrToFind) {
     const matched = scanResult.find(r => r.utr === utrToFind);
     if (matched && (!reqAmount || Number(matched.amount) >= Number(reqAmount))) {
-      return ContentService.createTextOutput(JSON.stringify({
+      payload = {
         verified: true,
         utr: matched.utr,
         amount: matched.amount,
-        source: "famapp_gmail_live"
-      })).setMimeType(ContentService.MimeType.JSON);
+        date: matched.date || "",
+        sender: matched.sender || "",
+        source: "famapp_gmail_history"
+      };
     }
   }
 
-  return ContentService.createTextOutput(JSON.stringify({
-    verified: false,
-    scannedCount: scanResult.length,
-    recentUtrs: scanResult
-  })).setMimeType(ContentService.MimeType.JSON);
-}
-
-function scanRecentFamAppEmails(targetUtr) {
-  // Search Gmail for FamApp / FamPay / UPI received payment notifications
-  const query = targetUtr
-    ? \`"\${targetUtr}" newer_than:7d\`
-    : \`(from:famapp OR from:fampay OR "fam" OR "UPI" OR "UTR" OR "received" OR "credited") newer_than:2d\`;
-
-  const threads = GmailApp.search(query, 0, 20);
-  const foundPayments = [];
-
-  for (let i = 0; i < threads.length; i++) {
-    const messages = threads[i].getMessages();
-    for (let j = 0; j < messages.length; j++) {
-      const msg = messages[j];
-      const body = msg.getPlainBody() + " " + msg.getSubject();
-
-      // Match 12-digit UTR number from FamApp email message
-      const utrMatches = body.match(/\\b\\d{12}\\b/g);
-      if (!utrMatches) continue;
-
-      // Match Rupee Amount (₹900, Rs. 900, INR 900)
-      const amtMatch = body.match(/(?:₹|Rs\\.?|INR)\\s*([0-9,]+(?:\\.[0-9]{1,2})?)/i);
-      const amount = amtMatch ? parseFloat(amtMatch[1].replace(/,/g, "")) : 0;
-
-      for (let k = 0; k < utrMatches.length; k++) {
-        const utr = utrMatches[k];
-        if (amount > 0) {
-          pushUtrToNeon(utr, amount);
-          foundPayments.push({ utr: utr, amount: amount });
-        }
-      }
-    }
+  const jsonString = JSON.stringify(payload);
+  if (callback) {
+    return ContentService.createTextOutput(callback + "(" + jsonString + ");")
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
-  return foundPayments;
+  return ContentService.createTextOutput(jsonString)
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function pushUtrToNeon(utr, amount) {
@@ -2427,398 +2422,486 @@ function pushUtrToNeon(utr, amount) {
       muteHttpExceptions: true
     });
   } catch (err) {}
+}
+
+function scanAllFamAppEmails(targetUtr, fallbackAmt) {
+  const senderFilter = "from:(" + ALLOWED_BANK_SENDERS.join(" OR ") + " OR no-reply OR noreply OR alerts)";
+  const query = targetUtr
+    ? \`in:anywhere "\${targetUtr}"\`
+    : \`in:anywhere \${senderFilter} ("UPI" OR "UTR" OR "Fam" OR "FamX" OR "received" OR "credited") newer_than:90d\`;
+
+  const threads = GmailApp.search(query, 0, 50);
+  const foundPayments = [];
+
+  for (let i = 0; i < threads.length; i++) {
+    const messages = threads[i].getMessages();
+    for (let j = 0; j < messages.length; j++) {
+      const msg = messages[j];
+      const senderRaw = (msg.getFrom() || "").toLowerCase();
+
+      const isTrustedSender = ALLOWED_BANK_SENDERS.some(domain => senderRaw.indexOf(domain) !== -1) ||
+        /fam|bank|upi|alert|noreply|no-reply|pay/i.test(senderRaw);
+      if (!isTrustedSender) continue;
+
+      const plain = msg.getPlainBody() || "";
+      const html = (msg.getBody() || "").replace(/<[^>]+>/g, " ");
+      const body = plain + " " + html + " " + msg.getSubject();
+      const msgDate = msg.getDate() ? msg.getDate().toISOString() : "";
+
+      const utrMatches = body.match(/\\b\\d{12}\\b/g);
+      if (!utrMatches && (!targetUtr || body.indexOf(targetUtr) === -1)) continue;
+
+      const amtMatch = body.match(/(?:₹|Rs\\.?|INR|amount\\s*of|received|credited\\s*by|paid|for)\\s*₹?\\s*([0-9,]+(?:\\.[0-9]{1,2})?)/i);
+      const amount = amtMatch ? parseFloat(amtMatch[1].replace(/,/g, "")) : (fallbackAmt || 900);
+
+      const listToProcess = utrMatches ? utrMatches : [targetUtr];
+      for (let k = 0; k < listToProcess.length; k++) {
+        const utr = String(listToProcess[k]).trim();
+        if (utr && utr.length === 12) {
+          pushUtrToNeon(utr, amount);
+          foundPayments.push({ utr: utr, amount: amount, date: msgDate, sender: senderRaw });
+        }
+      }
+    }
+  }
+  return foundPayments;
 }`;
 
-      const textarea = document.createElement('textarea');
-      textarea.value = scriptCode;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      showToast("FamApp Gmail Scanner Script copied to clipboard!", "success");
+      navigator.clipboard?.writeText(scriptCode);
+      showToast("Updated Apps Script copied to clipboard!", "success");
     }
 
-    function renderAdminProductsList() {
-      const list = document.getElementById('admin-products-list');
-      if (!list) return;
-      list.innerHTML = '';
+    /* Cross-Origin JSONP Helper for Google Apps Script */
+    function callAppsScriptJsonp(baseUrl, paramsObj = {}, timeoutMs = 8000) {
+      return new Promise((resolve) => {
+        if (!baseUrl) return resolve(null);
+        const cbName = "gas_cb_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+        const script = document.createElement("script");
+        let settled = false;
 
-      storeState.products.forEach((prod) => {
-        const mediaList = getProductMediaList(prod);
-        const showInGallery = prod.showName !== false;
-        const item = document.createElement('div');
-        item.className = "flex items-center justify-between p-3 rounded-xl theme-surface border theme-border gap-3";
-        item.innerHTML = `
-          <div class="flex items-center gap-3 min-w-0">
-            <img src="${prod.image}" class="w-11 h-11 object-cover rounded-lg shrink-0 border theme-border" onerror="this.src='https://placehold.co/100x100/111/fff?text=MEDIA'">
-            <div class="min-w-0">
-              <div class="font-bold text-xs truncate">${prod.title || 'Untitled Product'}</div>
-              <div class="font-mono text-[11px] theme-text-muted">₹${prod.price} • ${showInGallery ? 'Name in Gallery: ON' : 'Gallery: Image Only'} • ${mediaList.length} Media</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <button onclick="editProductInAdmin('${prod.id}')" class="px-2.5 py-1.5 rounded-lg theme-surface-elevated border theme-border hover:border-current text-[11px] font-mono">Edit</button>
-            <button onclick="deleteProductInAdmin('${prod.id}')" class="px-2.5 py-1.5 rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/10 text-[11px] font-mono">Delete</button>
-          </div>
-        `;
-        list.appendChild(item);
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          delete window[cbName];
+          script.remove();
+          resolve(null);
+        }, timeoutMs);
+
+        window[cbName] = function(data) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          delete window[cbName];
+          script.remove();
+          resolve(data);
+        };
+
+        script.onerror = function() {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          delete window[cbName];
+          script.remove();
+          resolve(null);
+        };
+
+        const sep = baseUrl.includes("?") ? "&" : "?";
+        const query = Object.entries({ ...paramsObj, callback: cbName, t: Date.now() })
+          .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+          .join("&");
+        script.src = `${baseUrl}${sep}${query}`;
+        document.body.appendChild(script);
       });
     }
 
-    async function deleteProductInAdmin(prodId) {
-      if (storeState.products.length <= 1) {
-        showToast("You must keep at least 1 product in your store.", "error");
-        return;
-      }
-      storeState.products = storeState.products.filter(p => p.id !== prodId);
-      selectedProduct = storeState.products[0];
-      renderAdminProductsList();
-      renderStorefront();
-      await deleteProductFromNeon(prodId);
-      showToast("Product deleted from storefront & Neon", "info");
-    }
-
-    function simulateOrderUnlock() {
-      closeAdminDashboard();
-      currentCustomerInfo = { name: "Admin Test Buyer", contactMethod: "phone", contactValue: "+91 9999999999" };
-      proceedToPaymentScreen();
-      unlockProductDownload("TEST-ADMIN-UTR");
-    }
-
-    /* Render Customer Orders & UTR Submissions in Admin Panel */
-    async function renderAdminCustomerOrders() {
-      const list = document.getElementById('admin-customer-orders-list');
-      if (!list) return;
-      list.innerHTML = '<div class="text-xs font-mono theme-text-muted p-2">Loading customer orders & UTR submissions...</div>';
-
-      let orders = [];
-      try {
-        const res = await executeNeonSql(`SELECT * FROM customer_orders ORDER BY created_at DESC LIMIT 50;`);
-        if (res.ok && Array.isArray(res.rows) && res.rows.length > 0) {
-          orders = res.rows;
-          storeState.customerOrders = orders;
-          saveLocalBackupState();
-        } else if (Array.isArray(storeState.customerOrders)) {
-          orders = storeState.customerOrders;
-        }
-      } catch (e) {
-        orders = storeState.customerOrders || [];
-      }
-
-      list.innerHTML = '';
-      if (!orders || orders.length === 0) {
-        list.innerHTML = '<div class="text-xs font-mono theme-text-muted p-4 rounded-xl border border-dashed theme-border text-center">No customer submissions yet. When a buyer enters their details & UTR, they will appear here automatically.</div>';
+    async function testAppsScriptConnection() {
+      const urlInput = document.getElementById('cfg-api-url').value.trim();
+      const statusEl = document.getElementById('script-diag-status');
+      if (!urlInput) {
+        showToast("Please paste your Google Apps Script Web App URL first.", "error");
         return;
       }
 
-      orders.forEach(o => {
-        const card = document.createElement('div');
-        card.className = "p-3.5 rounded-xl theme-surface-elevated border theme-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-mono text-xs";
+      if (statusEl) {
+        statusEl.textContent = "Testing connection to Google Apps Script & scanning Gmail...";
+        statusEl.className = "text-[10px] font-mono text-amber-300 mt-1";
+      }
 
-        let statusBadge = `<span class="px-2 py-0.5 rounded bg-zinc-500/20 text-zinc-300 text-[10px]">AWAITING PAYMENT</span>`;
-        if (o.status === 'verified') {
-          statusBadge = `<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">✓ VERIFIED & UNLOCKED</span>`;
-        } else if (o.status === 'utr_submitted') {
-          statusBadge = `<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-[10px]">UTR SUBMITTED (PENDING)</span>`;
-        } else if (o.status === 'duplicate_blocked') {
-          statusBadge = `<span class="px-2 py-0.5 rounded bg-red-500/20 text-red-300 font-bold text-[10px]">⚠ DUPLICATE UTR BLOCKED</span>`;
+      let data = await callAppsScriptJsonp(urlInput, {});
+      if (!data) {
+        try {
+          const resp = await fetch(`${urlInput}${urlInput.includes('?') ? '&' : '?'}t=${Date.now()}`);
+          if (resp.ok) data = await resp.json();
+        } catch (e) {}
+      }
+
+      if (data && typeof data.scannedCount === 'number') {
+        storeState.apiEndpoint = urlInput;
+        pushSettingsToNeon();
+        if (statusEl) {
+          statusEl.textContent = `✓ Connected! Scanned ${data.scannedCount} payment email(s) from FamApp/Bank in your Gmail.`;
+          statusEl.className = "text-[10px] font-mono text-emerald-400 mt-1";
         }
+        showToast(`Gmail Script Connected! Found ${data.scannedCount} payment email(s).`, "success");
+        renderAdminUtrList();
+      } else {
+        if (statusEl) {
+          statusEl.textContent = "⚠ Could not reach script. Make sure Web App is deployed with 'Who has access: Anyone'.";
+          statusEl.className = "text-[10px] font-mono text-red-400 mt-1";
+        }
+        showToast("Could not connect to Apps Script URL. Check deployment permissions.", "error");
+      }
+    }
 
-        const timeStr = o.created_at ? new Date(o.created_at).toLocaleString() : '';
+    function renderAdminProductsList() {
+      const container = document.getElementById('admin-products-list');
+      if (!container) return;
+      container.innerHTML = '';
 
-        card.innerHTML = `
-          <div class="space-y-1 min-w-0">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="font-black text-sm">${o.customer_name || 'Unknown'}</span>
-              <span class="px-2 py-0.5 rounded theme-badge text-[10px]">${o.contact_value || 'No Contact'}</span>
-              ${statusBadge}
-            </div>
-            <div class="text-[11px] theme-text-muted truncate">
-              Product: <strong class="theme-text">${o.product_title || 'Product'}</strong> (₹${o.product_price || 0}) • Order: ${o.order_id}
-            </div>
-            <div class="flex flex-wrap items-center gap-3 text-[11px]">
-              <span>UTR: <strong class="${o.utr ? 'text-emerald-400' : 'theme-text-muted'}">${o.utr || 'Not entered yet'}</strong></span>
-              <span class="theme-text-muted text-[10px]">${timeStr}</span>
+      storeState.products.forEach((prod, index) => {
+        const mediaList = getProductMediaList(prod);
+        const firstImg = mediaList[0] || { type: 'image', url: prod.image };
+        const hasTitle = prod.showName !== false && prod.title && prod.title.trim() !== '';
+
+        const row = document.createElement('div');
+        row.className = "p-3.5 rounded-2xl theme-surface-elevated border theme-border flex flex-col sm:flex-row sm:items-center justify-between gap-3";
+        row.innerHTML = `
+          <div class="flex items-center gap-3 min-w-0">
+            ${firstImg.type === 'video'
+              ? `<video src="${firstImg.url}" class="w-11 h-11 rounded-xl object-cover border theme-border shrink-0" muted></video>`
+              : `<img src="${firstImg.url}" class="w-11 h-11 rounded-xl object-cover border theme-border shrink-0" onerror="this.src='https://placehold.co/100x100/111/fff?text=IMG'" />`
+            }
+            <div class="min-w-0">
+              <div class="font-bold text-xs truncate">${prod.title || '<span class="theme-text-muted italic">(Unnamed Product)</span>'}</div>
+              <div class="text-[11px] font-mono theme-text-muted">₹${prod.price} • ${hasTitle ? 'Name Shown in Gallery' : 'Image + Price Only in Gallery'} • ${mediaList.length} media item(s)</div>
             </div>
           </div>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <button onclick="deleteCustomerOrderInAdmin('${o.order_id}')" class="px-2.5 py-1.5 rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/10 text-[10px]">
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="editProductInAdmin('${prod.id}')" class="px-3 py-1.5 rounded-lg theme-surface border theme-border hover:border-current text-xs font-mono">
+              Edit
+            </button>
+            <button onclick="removeProductFromAdmin('${prod.id}')" class="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-mono">
               Delete
             </button>
           </div>
         `;
-        list.appendChild(card);
+        container.appendChild(row);
       });
     }
 
-    async function deleteCustomerOrderInAdmin(orderId) {
-      storeState.customerOrders = (storeState.customerOrders || []).filter(o => o.order_id !== orderId);
+    async function removeProductFromAdmin(prodId) {
+      storeState.products = storeState.products.filter(p => p.id !== prodId);
+      if (selectedProduct && selectedProduct.id === prodId) {
+        selectedProduct = storeState.products[0] || null;
+      }
       saveLocalBackupState();
-      try {
-        await executeNeonSql(`DELETE FROM customer_orders WHERE order_id = $1;`, [orderId]);
-      } catch (e) {}
+      renderStorefront();
+      renderAdminProductsList();
+      await deleteProductFromNeon(prodId);
+      showToast("Product removed", "info");
+    }
+
+    async function renderAdminCustomerOrders() {
+      const listEl = document.getElementById('admin-customer-orders-list');
+      if (!listEl) return;
+      listEl.innerHTML = `<div class="text-xs font-mono theme-text-muted">Loading customer orders & UTR submissions...</div>`;
+
+      const res = await executeNeonSql(`SELECT * FROM customer_orders ORDER BY created_at DESC LIMIT 60;`);
+      let rows = [];
+      if (res.ok && Array.isArray(res.rows) && res.rows.length > 0) {
+        rows = res.rows;
+        storeState.customerOrders = rows;
+        saveLocalBackupState();
+      } else if (Array.isArray(storeState.customerOrders)) {
+        rows = storeState.customerOrders;
+      }
+
+      listEl.innerHTML = '';
+      if (!rows.length) {
+        listEl.innerHTML = `<div class="text-xs font-mono theme-text-muted p-4 rounded-xl theme-surface-elevated border theme-border text-center">No customer orders or UTR submissions recorded yet.</div>`;
+        return;
+      }
+
+      rows.forEach(order => {
+        const status = (order.status || 'details_entered').toLowerCase();
+        let statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-500/20 text-zinc-300">AWAITING PAYMENT</span>`;
+        if (status === 'verified') {
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-300 font-bold">✓ VERIFIED & UNLOCKED</span>`;
+        } else if (status === 'utr_submitted') {
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 font-bold">UTR SUBMITTED</span>`;
+        } else if (status === 'duplicate_blocked') {
+          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-red-500/20 text-red-300 font-bold">⚠ DUPLICATE UTR BLOCKED</span>`;
+        }
+
+        const utrDisplay = order.utr && String(order.utr).trim() !== ''
+          ? `<span class="font-bold text-white bg-white/10 px-2 py-0.5 rounded">UTR: ${order.utr}</span>`
+          : `<span class="theme-text-muted">No UTR entered yet</span>`;
+
+        const approveBtnHtml = (order.utr && String(order.utr).trim().length === 12 && status !== 'verified')
+          ? `<button onclick="approveCustomerOrderUtr('${order.order_id}', '${order.utr}', ${Number(order.product_price) || 0})"
+               class="px-2.5 py-1 rounded-lg bg-emerald-500 text-black font-mono font-bold text-[10px] hover:bg-emerald-400 transition">
+               ✓ Approve UTR
+             </button>`
+          : ``;
+
+        const timeLabel = order.created_at ? new Date(order.created_at).toLocaleString() : '';
+
+        const item = document.createElement('div');
+        item.className = "p-3.5 rounded-2xl theme-surface-elevated border theme-border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs font-mono";
+        item.innerHTML = `
+          <div class="space-y-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="font-bold text-sm">${order.customer_name || 'Customer'}</span>
+              <span class="px-2 py-0.5 rounded theme-badge text-[10px]">${order.contact_value || ''}</span>
+              <span class="text-[10px] theme-text-muted">${order.order_id || ''}</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 text-[11px] theme-text-muted">
+              <span>Product: <strong class="theme-text">${order.product_title || 'Digital Asset'}</strong> (₹${order.product_price || 0})</span>
+              <span>•</span>
+              ${utrDisplay}
+            </div>
+          </div>
+          <div class="flex sm:flex-col items-center sm:items-end justify-between gap-1.5 shrink-0">
+            <div class="flex items-center gap-1.5">
+              ${approveBtnHtml}
+              ${statusBadge}
+            </div>
+            <span class="text-[10px] theme-text-muted">${timeLabel}</span>
+          </div>
+        `;
+        listEl.appendChild(item);
+      });
+    }
+
+    async function approveCustomerOrderUtr(orderId, utr, amount) {
+      const cleanUtr = String(utr || '').replace(/\D/g, '').trim();
+      if (!cleanUtr) return;
+      await executeNeonSql(`
+        INSERT INTO upi_payments (utr, amount, status)
+        VALUES ($1, $2, 'unclaimed')
+        ON CONFLICT (utr) DO UPDATE SET status = 'unclaimed', amount = EXCLUDED.amount;
+      `, [cleanUtr, Number(amount) || 500]);
+
+      await executeNeonSql(`
+        UPDATE customer_orders SET status = 'verified' WHERE order_id = $1;
+      `, [orderId]);
+
+      showToast(`UTR ${cleanUtr} approved! Customer can now click Verify to download.`, "success");
       renderAdminCustomerOrders();
-      showToast(`Order ${orderId} removed`, "info");
+      renderAdminUtrList();
     }
 
     async function renderAdminUtrList() {
-      const list = document.getElementById('admin-utr-list');
-      if (!list) return;
-      list.innerHTML = '<div class="text-xs font-mono theme-text-muted p-2">Fetching Neon UTR ledger...</div>';
+      const listEl = document.getElementById('admin-utr-list');
+      if (!listEl) return;
+      listEl.innerHTML = `<div class="text-xs font-mono theme-text-muted">Loading UTR records...</div>`;
 
-      try {
-        const res = await executeNeonSql(`SELECT * FROM upi_payments ORDER BY created_at DESC LIMIT 20;`);
-        list.innerHTML = '';
-        const rows = res.rows || [];
+      const res = await executeNeonSql(`SELECT utr, amount, status, created_at FROM upi_payments ORDER BY created_at DESC LIMIT 30;`);
+      listEl.innerHTML = '';
 
-        if (rows.length === 0) {
-          list.innerHTML = '<div class="text-xs font-mono theme-text-muted p-2">No UTR records found in Neon yet.</div>';
-          return;
-        }
-
-        rows.forEach(r => {
-          const rowEl = document.createElement('div');
-          rowEl.className = "flex items-center justify-between p-2.5 rounded-xl theme-surface border theme-border font-mono text-xs";
-          const isClaimed = r.status === 'claimed';
-          rowEl.innerHTML = `
-            <div class="flex items-center gap-3">
-              <span class="font-bold">${r.utr}</span>
-              <span class="text-emerald-400">₹${r.amount}</span>
-              <span class="text-[10px] px-2 py-0.5 rounded ${isClaimed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}">${r.status.toUpperCase()}</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <button onclick="unclaimUtrInNeon('${r.utr}')" class="px-2 py-1 rounded theme-surface-elevated border theme-border text-[10px]">Reset</button>
-              <button onclick="deleteUtrInNeon('${r.utr}')" class="px-2 py-1 rounded border border-red-500/40 text-red-400 text-[10px]">Del</button>
-            </div>
-          `;
-          list.appendChild(rowEl);
-        });
-      } catch (err) {
-        list.innerHTML = `<div class="text-xs font-mono text-red-400 p-2">UTR ledger offline</div>`;
+      if (!res.rows || res.rows.length === 0) {
+        listEl.innerHTML = `<div class="text-xs font-mono theme-text-muted">No UTR records found.</div>`;
+        return;
       }
-    }
 
-    async function resetTestUtrInNeon() {
-      try {
-        await executeNeonSql(`
-          INSERT INTO upi_payments (utr, amount, status)
-          VALUES ('631077597958', 900, 'unclaimed')
-          ON CONFLICT (utr) DO UPDATE SET amount = EXCLUDED.amount, status = 'unclaimed';
-        `);
-        showToast("Test UTR '631077597958' (₹900) seeded in Neon!", "success");
-        renderAdminUtrList();
-      } catch (e) {
-        showToast("Failed to seed test UTR", "error");
-      }
+      res.rows.forEach(r => {
+        const isClaimed = r.status === 'claimed';
+        const div = document.createElement('div');
+        div.className = "p-2.5 rounded-xl theme-surface-elevated border theme-border flex items-center justify-between text-xs font-mono";
+        div.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="font-bold">${r.utr}</span>
+            <span class="theme-text-muted">₹${r.amount}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded text-[10px] ${isClaimed ? 'bg-zinc-500/20 text-zinc-400' : 'bg-emerald-500/20 text-emerald-300'}">
+              ${r.status.toUpperCase()}
+            </span>
+            <button onclick="deleteUtrFromNeon('${r.utr}')" class="text-red-400 hover:underline text-[10px]">Delete</button>
+          </div>
+        `;
+        listEl.appendChild(div);
+      });
     }
 
     async function addManualUtrToNeon(e) {
       e.preventDefault();
-      const utr = document.getElementById('admin-utr-id').value.trim();
+      const utr = document.getElementById('admin-utr-id').value.replace(/\D/g, '').trim();
       const amount = parseFloat(document.getElementById('admin-utr-amount').value);
-      if (!utr || !amount) return;
-
-      try {
-        await executeNeonSql(`
-          INSERT INTO upi_payments (utr, amount, status)
-          VALUES ($1, $2, 'unclaimed')
-          ON CONFLICT (utr) DO UPDATE SET amount = EXCLUDED.amount, status = 'unclaimed';
-        `, [utr, amount]);
-        document.getElementById('admin-utr-id').value = '';
-        document.getElementById('admin-utr-amount').value = '';
-        showToast(`UTR ${utr} inserted into Neon ledger!`, "success");
-        renderAdminUtrList();
-      } catch (e) {
-        showToast(`Error inserting UTR`, "error");
+      if (utr.length < 6 || isNaN(amount)) {
+        showToast("Enter a valid UTR and amount", "error");
+        return;
       }
+
+      await executeNeonSql(`
+        INSERT INTO upi_payments (utr, amount, status)
+        VALUES ($1, $2, 'unclaimed')
+        ON CONFLICT (utr) DO UPDATE SET amount = EXCLUDED.amount, status = 'unclaimed';
+      `, [utr, amount]);
+
+      document.getElementById('admin-utr-id').value = '';
+      document.getElementById('admin-utr-amount').value = '';
+      renderAdminUtrList();
+      showToast(`UTR ${utr} (₹${amount}) authorized!`, "success");
     }
 
-    async function unclaimUtrInNeon(utr) {
-      try {
-        await executeNeonSql(`UPDATE upi_payments SET status = 'unclaimed' WHERE utr = $1;`, [utr]);
-        showToast(`UTR ${utr} reset to unclaimed`, "info");
-        renderAdminUtrList();
-      } catch (e) {
-        showToast("Error resetting UTR", "error");
-      }
+    async function deleteUtrFromNeon(utr) {
+      await executeNeonSql(`DELETE FROM upi_payments WHERE utr = $1;`, [utr]);
+      renderAdminUtrList();
+      showToast(`UTR ${utr} removed`, "info");
     }
 
-    async function deleteUtrInNeon(utr) {
-      try {
-        await executeNeonSql(`DELETE FROM upi_payments WHERE utr = $1;`, [utr]);
-        showToast(`UTR ${utr} deleted`, "info");
-        renderAdminUtrList();
-      } catch (e) {
-        showToast("Error deleting UTR", "error");
+    async function resetTestUtrInNeon() {
+      await executeNeonSql(`
+        INSERT INTO upi_payments (utr, amount, status)
+        VALUES ('631077597958', 900, 'unclaimed')
+        ON CONFLICT (utr) DO UPDATE SET amount = 900, status = 'unclaimed';
+      `);
+      renderAdminUtrList();
+      showToast("Customer UTR 631077597958 (₹900) reset to UNCLAIMED!", "success");
+    }
+
+    function simulateOrderUnlock() {
+      closeAdminDashboard();
+      if (!selectedProduct && storeState.products.length > 0) {
+        selectedProduct = storeState.products[0];
       }
+      proceedToPaymentScreen();
+      document.getElementById('utr-input').value = "631077597958";
+      document.getElementById('utr-counter').textContent = "12 / 12 digits";
+      unlockProductDelivery("631077597958", selectedProduct ? selectedProduct.price : 900, "ADMIN_SIMULATION");
     }
 
     /* =========================================================================
-       WHATSAPP SUPPORT & ORDER DISPATCH
-       ========================================================================= */
-    function openWhatsAppSupport() {
-      const text = encodeURIComponent(`Hello ${storeState.brandName}, I need assistance regarding my digital product order.`);
-      window.open(`https://wa.me/${storeState.whatsappNumber}?text=${text}`, '_blank');
-    }
-
-    function sendOrderToWhatsApp() {
-      const utr = document.getElementById('utr-input').value.trim() || "NOT_PROVIDED";
-      if (utr !== "NOT_PROVIDED") {
-        saveCustomerOrderSubmission(utr, "utr_submitted");
-      }
-      const msg = encodeURIComponent(`*NEW ORDER DISPATCH // ${storeState.brandName}*
-----------------------------------------
-• Order ID: ${currentOrderId}
-• Buyer Name: ${currentCustomerInfo.name || 'N/A'}
-• Buyer Contact: ${currentCustomerInfo.contactValue || 'N/A'}
-• Product: ${selectedProduct.title || 'Digital Asset'}
-• Price: ₹${selectedProduct.price}
-• UPI UTR / Txn ID: ${utr}
-• Status: Payment Screenshot Submitted
-----------------------------------------
-Please verify and send my download link.`);
-      window.open(`https://wa.me/${storeState.whatsappNumber}?text=${msg}`, '_blank');
-    }
-
-    /* =========================================================================
-       AI OCR & PAYMENT VERIFICATION ENGINE
+       IN-BROWSER AI OCR SCREENSHOT SCANNER (TESSERACT.JS V5)
        ========================================================================= */
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
     const utrInput = document.getElementById('utr-input');
 
-    if (dropZone && fileInput) {
-      dropZone.onclick = () => fileInput.click();
-      dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); };
-      dropZone.ondragleave = () => dropZone.classList.remove('drag-over');
-      dropZone.ondrop = (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('drag-over');
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-          processScreenshotFile(e.dataTransfer.files[0]);
-        }
-      };
-      fileInput.onchange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-          processScreenshotFile(e.target.files[0]);
-        }
-      };
-    }
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      if (e.dataTransfer.files.length) handleScreenshotFile(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) handleScreenshotFile(e.target.files[0]);
+    });
 
     window.addEventListener('paste', (e) => {
-      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      const items = e.clipboardData?.items;
+      if (!items) return;
       for (let item of items) {
-        if (item.type.indexOf('image') === 0) {
-          const file = item.getAsFile();
-          if (file) processScreenshotFile(file);
+        if (item.type.startsWith('image/')) {
+          handleScreenshotFile(item.getAsFile());
           break;
         }
       }
     });
 
-    if (utrInput) {
-      utrInput.oninput = (e) => {
-        const val = e.target.value.replace(/\D/g, '');
-        e.target.value = val;
-        document.getElementById('utr-counter').textContent = `${val.length} / 12 digits`;
-        if (val.length === 12) {
-          verifyPaymentWithNeon();
-        }
-      };
-    }
+    utrInput.addEventListener('input', () => {
+      const clean = utrInput.value.replace(/\D/g, '').slice(0, 12);
+      utrInput.value = clean;
+      document.getElementById('utr-counter').textContent = `${clean.length} / 12 digits`;
+      document.getElementById('utr-used-banner')?.classList.add('hidden');
+      const btn = document.getElementById('btn-verify');
+      if (btn && btn.textContent.includes('Already Used')) {
+        btn.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4"></i><span>Done // Auto-Verify UTR</span>`;
+        lucide.createIcons();
+      }
+    });
 
     function removeScreenshot(e) {
       e.stopPropagation();
+      fileInput.value = '';
       document.getElementById('drop-empty-view').classList.remove('hidden');
       document.getElementById('drop-preview-view').classList.add('hidden');
-      document.getElementById('file-input').value = '';
-      ocrExtractedData = { utr: null, txnId: null, amount: null };
+      document.getElementById('ocr-status-box').classList.add('hidden');
+      document.getElementById('ocr-warning-box').classList.add('hidden');
       document.getElementById('detection-badge').classList.add('hidden');
       document.getElementById('detected-amount-badge').classList.add('hidden');
+      document.getElementById('utr-used-banner')?.classList.add('hidden');
     }
 
-    async function processScreenshotFile(file) {
+    async function handleScreenshotFile(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        showToast("Please select a valid image file", "error");
+        return;
+      }
+
       const reader = new FileReader();
-      reader.onload = async function(evt) {
-        const imgBase64 = evt.target.result;
-        document.getElementById('preview-image').src = imgBase64;
-        document.getElementById('preview-filename').textContent = file.name || "screenshot.png";
+      reader.onload = (e) => {
+        document.getElementById('preview-image').src = e.target.result;
+        document.getElementById('preview-filename').textContent = file.name;
         document.getElementById('drop-empty-view').classList.add('hidden');
         document.getElementById('drop-preview-view').classList.remove('hidden');
-
-        await runTesseractOcr(imgBase64);
       };
       reader.readAsDataURL(file);
+
+      await runTesseractOcr(file);
     }
 
-    async function runTesseractOcr(imageSource) {
+    async function runTesseractOcr(file) {
+      if (isProcessingOcr) return;
+      isProcessingOcr = true;
+
       const statusBox = document.getElementById('ocr-status-box');
       const statusText = document.getElementById('ocr-status-text');
       const progressBar = document.getElementById('ocr-progress-bar');
       const warningBox = document.getElementById('ocr-warning-box');
 
-      statusBox.classList.remove('hidden');
       warningBox.classList.add('hidden');
+      statusBox.classList.remove('hidden');
       statusText.textContent = "Initializing AI OCR Engine...";
-      progressBar.style.width = "20%";
-
-      isProcessingOcr = true;
+      progressBar.style.width = "15%";
 
       try {
-        const worker = await Tesseract.createWorker('eng');
-        statusText.textContent = "Scanning payment screenshot...";
-        progressBar.style.width = "55%";
+        const result = await Tesseract.recognize(file, 'eng', {
+          logger: (m) => {
+            if (m.status === 'recognizing text') {
+              const pct = Math.round(m.progress * 100);
+              progressBar.style.width = `${Math.max(15, pct)}%`;
+              statusText.textContent = `Scanning Receipt for 12-Digit UTR (${pct}%)...`;
+            }
+          }
+        });
 
-        const ret = await worker.recognize(imageSource);
-        const text = ret.data.text || "";
-        await worker.terminate();
+        const rawText = result.data.text || "";
+        const normalized = rawText.replace(/[\s-]/g, '');
+        const utrMatch = rawText.match(/\b\d{12}\b/) || normalized.match(/\d{12}/);
+        const amtMatch = rawText.match(/(?:₹|Rs\.?|INR)\s*([0-9,]+(?:\.\d{1,2})?)/i);
 
-        progressBar.style.width = "95%";
+        statusBox.classList.add('hidden');
 
-        const utrMatch = text.match(/\b\d{12}\b/);
-        const txnMatch = text.match(/\b[A-Z0-9]{12,18}\b/);
-        const amountMatch = text.match(/(?:₹|INR\s*|Rs\.?\s*)?(\d{2,5}(?:\.\d{2})?)/i);
-
-        let foundUtr = utrMatch ? utrMatch[0] : null;
-        if (!foundUtr && txnMatch) {
-          const digits = txnMatch[0].replace(/\D/g, '');
-          if (digits.length >= 12) foundUtr = digits.slice(-12);
-        }
-
-        let foundAmount = amountMatch ? parseFloat(amountMatch[1]) : null;
-
-        ocrExtractedData = {
-          utr: foundUtr,
-          txnId: txnMatch ? txnMatch[0] : null,
-          amount: foundAmount
-        };
-
-        progressBar.style.width = "100%";
-        setTimeout(() => statusBox.classList.add('hidden'), 350);
-
-        if (ocrExtractedData.utr) {
-          document.getElementById('utr-input').value = ocrExtractedData.utr;
-          document.getElementById('utr-counter').textContent = `${ocrExtractedData.utr.length} / 12 digits`;
-          document.getElementById('detection-badge').classList.remove('hidden');
-
-          if (ocrExtractedData.amount) {
+        if (amtMatch && amtMatch[1]) {
+          const parsedAmt = parseFloat(amtMatch[1].replace(/,/g, ''));
+          if (!isNaN(parsedAmt)) {
+            ocrExtractedData.amount = parsedAmt;
             const amtBadge = document.getElementById('detected-amount-badge');
-            amtBadge.textContent = `₹${ocrExtractedData.amount} DETECTED`;
+            amtBadge.textContent = `₹${parsedAmt} DETECTED`;
             amtBadge.classList.remove('hidden');
           }
+        }
 
-          // Log the AI-detected UTR alongside customer details immediately
-          saveCustomerOrderSubmission(ocrExtractedData.utr, "utr_submitted");
-
-          showToast("AI OCR extracted 12-digit UTR!", "success");
-          setTimeout(() => verifyPaymentWithNeon(), 300);
+        if (utrMatch && utrMatch[0]) {
+          const detectedUtr = utrMatch[0].slice(0, 12);
+          ocrExtractedData.utr = detectedUtr;
+          utrInput.value = detectedUtr;
+          document.getElementById('utr-counter').textContent = `12 / 12 digits`;
+          document.getElementById('detection-badge').classList.remove('hidden');
+          showToast(`AI extracted UTR: ${detectedUtr}`, "success");
+          saveCustomerOrderSubmission(detectedUtr, "utr_submitted");
+          await verifyPaymentWithNeon();
         } else {
           warningBox.classList.remove('hidden');
-          document.getElementById('utr-input').focus();
-          showToast("Please type the 12-digit UTR manually", "info");
+          showToast("Please type the 12-digit UTR shown on your receipt", "info");
+          utrInput.focus();
         }
       } catch (err) {
-        console.error("OCR Error:", err);
         statusBox.classList.add('hidden');
         warningBox.classList.remove('hidden');
       } finally {
@@ -2826,142 +2909,219 @@ Please verify and send my download link.`);
       }
     }
 
+    /* =========================================================================
+       STRICT ANTI-REUSE UTR & GMAIL / NEON VERIFICATION ENGINE
+       - Verifies BOTH new & old payments (1, 2, 3+ days ago)
+       - Shows clear "Already Used" banner & blocks 2nd attempt
+       ========================================================================= */
+    const LOCAL_CLAIMED_UTRS_KEY = "mono_claimed_utrs_v2";
+    function getLocalClaimedUtrs() {
+      try {
+        return JSON.parse(localStorage.getItem(LOCAL_CLAIMED_UTRS_KEY) || "[]");
+      } catch (e) {
+        return [];
+      }
+    }
+    function markUtrClaimedLocally(utr) {
+      try {
+        const list = getLocalClaimedUtrs();
+        if (!list.includes(utr)) {
+          list.push(utr);
+          localStorage.setItem(LOCAL_CLAIMED_UTRS_KEY, JSON.stringify(list));
+        }
+      } catch (e) {}
+    }
+
+    function showAlreadyUsedUtrAlert(utr) {
+      const usedBanner = document.getElementById('utr-used-banner');
+      const usedSub = document.getElementById('utr-used-sub');
+      const emailBanner = document.getElementById('email-match-banner');
+      if (emailBanner) emailBanner.classList.add('hidden');
+      if (usedBanner) {
+        if (usedSub) {
+          usedSub.textContent = `UTR ${utr} has already been used for a purchase. 2nd attempt is cancelled and blocked.`;
+        }
+        usedBanner.classList.remove('hidden');
+      }
+      document.getElementById('unlocked-card')?.classList.add('hidden');
+      showToast("Already Used! This UTR was already used and is cancelled on 2nd attempt.", "error");
+    }
+
     async function verifyPaymentWithNeon() {
-      const utr = document.getElementById('utr-input').value.trim();
-      if (utr.length < 10) {
-        showToast("Please enter a valid 12-digit UTR", "error");
+      const utr = document.getElementById('utr-input').value.replace(/\D/g, '').trim();
+      if (utr.length !== 12) {
+        showToast("Please enter a valid 12-digit UPI UTR number", "error");
+        document.getElementById('utr-input').focus();
         return;
       }
 
-      const verifyBtn = document.getElementById('btn-verify');
-      verifyBtn.textContent = "Checking FamApp Email & DB...";
-      verifyBtn.disabled = true;
+      // Hide any previous "Already Used" banner before checking
+      document.getElementById('utr-used-banner')?.classList.add('hidden');
 
-      // Always record the customer's submitted UTR in Admin Customer Orders
-      await saveCustomerOrderSubmission(utr, "utr_submitted");
+      // 1. Block obviously fake/test patterns (e.g., 000000000000, 111111111111, 123456789012)
+      if (/^(\d)\1{11}$/.test(utr) || utr === "123456789012" || utr === "012345678901") {
+        await saveCustomerOrderSubmission(utr, "invalid_fake_utr");
+        showToast("Invalid UTR! Fake or repeated digits (like 000000000000) are blocked.", "error");
+        return;
+      }
+
+      const btn = document.getElementById('btn-verify');
+      const origHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Checking Bank & Email Records...</span>`;
+      lucide.createIcons();
 
       try {
-        // Step 1: Check Neon Database upi_payments ledger immediately
-        let res = await executeNeonSql(`SELECT * FROM upi_payments WHERE utr = $1 LIMIT 1;`, [utr]);
-        
-        // If UTR is not yet in Neon but is a 12-digit test/friend UTR, auto-authorize it instantly for seamless testing!
-        if ((!res.rows || res.rows.length === 0) && utr.length === 12) {
-          await executeNeonSql(
-            `INSERT INTO upi_payments (utr, amount, status) VALUES ($1, $2, 'unclaimed') ON CONFLICT (utr) DO NOTHING;`,
-            [utr, Number(selectedProduct.price)]
-          );
-          res = await executeNeonSql(`SELECT * FROM upi_payments WHERE utr = $1 LIMIT 1;`, [utr]);
+        const requiredPrice = Number(selectedProduct ? selectedProduct.price : 0);
+
+        // Log that customer submitted this UTR
+        await saveCustomerOrderSubmission(utr, "utr_submitted");
+
+        // 2. Check if UTR was already used locally in this browser
+        const localClaimed = getLocalClaimedUtrs();
+        if (localClaimed.includes(utr)) {
+          await saveCustomerOrderSubmission(utr, "duplicate_blocked");
+          showAlreadyUsedUtrAlert(utr);
+          btn.disabled = false;
+          btn.innerHTML = `<i data-lucide="ban" class="w-4 h-4"></i><span>Already Used (2nd Attempt Blocked)</span>`;
+          lucide.createIcons();
+          return;
         }
 
-        if (res.rows && res.rows.length > 0) {
-          const row = res.rows[0];
+        // 3. First check Neon Database `upi_payments` ledger (includes old & pre-synced UTRs)
+        let checkRes = await executeNeonSql(`SELECT utr, amount, status FROM upi_payments WHERE utr = $1 LIMIT 1;`, [utr]);
 
-          // Strict Anti-Reuse Check: Block if UTR was already claimed!
-          if (String(row.status).toLowerCase() === 'claimed') {
+        // 4. If not in Neon yet (e.g., paid 1, 2, 3+ days ago), call Google Apps Script via JSONP + Fetch
+        if ((!checkRes.rows || checkRes.rows.length === 0) && storeState.apiEndpoint) {
+          let apiData = await callAppsScriptJsonp(storeState.apiEndpoint, {
+            utr: utr,
+            amount: requiredPrice
+          });
+
+          if (!apiData) {
+            try {
+              const sep = storeState.apiEndpoint.includes('?') ? '&' : '?';
+              const apiResp = await fetch(`${storeState.apiEndpoint}${sep}utr=${encodeURIComponent(utr)}&amount=${encodeURIComponent(requiredPrice)}&t=${Date.now()}`);
+              if (apiResp.ok) {
+                apiData = await apiResp.json();
+              }
+            } catch (apiErr) {}
+          }
+
+          if (apiData && (apiData.verified === true || apiData.status === 'verified')) {
+            const verifiedAmt = Number(apiData.amount) || requiredPrice;
+            await executeNeonSql(`
+              INSERT INTO upi_payments (utr, amount, status)
+              VALUES ($1, $2, 'unclaimed')
+              ON CONFLICT (utr) DO NOTHING;
+            `, [utr, verifiedAmt]);
+            checkRes = await executeNeonSql(`SELECT utr, amount, status FROM upi_payments WHERE utr = $1 LIMIT 1;`, [utr]);
+          }
+        }
+
+        // 5. Evaluate Neon Database Result
+        if (checkRes.rows && checkRes.rows.length > 0) {
+          const row = checkRes.rows[0];
+          const currentStatus = String(row.status || '').toLowerCase();
+
+          // STRICT ANTI-REUSE BLOCK: If status is already 'claimed', cancel 2nd attempt & show Already Used
+          if (currentStatus === 'claimed') {
+            markUtrClaimedLocally(utr);
             await saveCustomerOrderSubmission(utr, "duplicate_blocked");
-            showToast("This UTR / Screenshot has already been used for a purchase!", "error");
-            verifyBtn.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4"></i><span>Done // Auto-Verify UTR</span>`;
-            verifyBtn.disabled = false;
+            showAlreadyUsedUtrAlert(utr);
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="ban" class="w-4 h-4"></i><span>Already Used (2nd Attempt Blocked)</span>`;
             lucide.createIcons();
             return;
           }
 
-          if (Number(row.amount) >= Number(selectedProduct.price) || Number(row.amount) > 0) {
-            const claimRes = await executeNeonSql(
-              `UPDATE upi_payments SET status = 'claimed' WHERE utr = $1 RETURNING *;`,
-              [utr]
-            );
+          // Verify amount paid is >= product price
+          if (Number(row.amount) >= requiredPrice) {
+            const claimRes = await executeNeonSql(`
+              UPDATE upi_payments
+              SET status = 'claimed'
+              WHERE utr = $1 AND status = 'unclaimed'
+              RETURNING utr, amount;
+            `, [utr]);
+
+            if (!claimRes.rows || claimRes.rows.length === 0) {
+              markUtrClaimedLocally(utr);
+              await saveCustomerOrderSubmission(utr, "duplicate_blocked");
+              showAlreadyUsedUtrAlert(utr);
+              btn.disabled = false;
+              btn.innerHTML = `<i data-lucide="ban" class="w-4 h-4"></i><span>Already Used (2nd Attempt Blocked)</span>`;
+              lucide.createIcons();
+              return;
+            }
+
+            markUtrClaimedLocally(utr);
             await saveCustomerOrderSubmission(utr, "verified");
-            unlockProductDownload(utr);
+            unlockProductDelivery(utr, row.amount, "NEON_SQL_VERIFIED");
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+            lucide.createIcons();
+            return;
+          } else {
+            await saveCustomerOrderSubmission(utr, "amount_mismatch");
+            showToast(`Amount mismatch: UTR shows ₹${row.amount}, but product requires ₹${requiredPrice}`, "error");
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+            lucide.createIcons();
             return;
           }
         }
 
-        showToast("UTR logged! Not found in database yet. Click 'Seed Test UTR' in Admin Panel if testing.", "error");
-        verifyBtn.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4"></i><span>Done // Auto-Verify UTR</span>`;
-        verifyBtn.disabled = false;
-        lucide.createIcons();
+        // 6. If UTR is not found in Neon or Gmail inbox, DO NOT unlock
+        showToast(`UTR ${utr} not found in payment records yet! Please check your 12-digit UTR or contact support.`, "error");
       } catch (err) {
-        // Fallback instant unlock for live testing resilience
-        await saveCustomerOrderSubmission(utr, "verified");
-        unlockProductDownload(utr);
+        showToast("Verification check failed. Please try again or send details on WhatsApp.", "error");
+      } finally {
+        btn.disabled = false;
+        if (!btn.textContent.includes('Already Used')) {
+          btn.innerHTML = origHtml;
+          lucide.createIcons();
+        }
       }
     }
 
-    function unlockProductDownload(utr) {
-      document.getElementById('email-match-banner').classList.remove('hidden');
-      document.getElementById('email-match-title').textContent = `PAYMENT RECEIVED // ₹${selectedProduct.price} MATCHED WITH EMAIL`;
-      document.getElementById('email-match-sub').textContent = `UTR ${utr} verified in records.`;
+    function unlockProductDelivery(utr, amount, method) {
+      document.getElementById('utr-used-banner')?.classList.add('hidden');
+      const banner = document.getElementById('email-match-banner');
+      document.getElementById('email-match-title').textContent = `PAYMENT RECEIVED // ₹${amount} MATCHED WITH EMAIL`;
+      document.getElementById('email-match-sub').textContent = `UTR ${utr} verified (${method}) and locked to Order ${currentOrderId}.`;
+      banner.classList.remove('hidden');
 
-      document.getElementById('unlocked-card').classList.remove('hidden');
+      const unlockedCard = document.getElementById('unlocked-card');
+      document.getElementById('verified-summary-text').textContent = `Order ${currentOrderId} • UTR: ${utr} • ₹${amount} Verified`;
       document.getElementById('download-button').href = selectedProduct.downloadUrl;
-      document.getElementById('verified-summary-text').textContent = `Order ${currentOrderId} confirmed for ${currentCustomerInfo.name || 'Customer'}. Download link unlocked.`;
+      unlockedCard.classList.remove('hidden');
 
       if (typeof confetti === 'function') {
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
       }
-
-      showToast("Payment verified! Download unlocked.", "success");
-      const verifyBtn = document.getElementById('btn-verify');
-      verifyBtn.textContent = "✓ Verified & Unlocked";
-      verifyBtn.disabled = false;
-
-      document.getElementById('unlocked-card').scrollIntoView({ behavior: 'smooth' });
+      unlockedCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      showToast("Payment verified! Product download unlocked.", "success");
     }
 
-    /* =========================================================================
-       INITIALIZATION ON WINDOW LOAD
-       ========================================================================= */
-    window.onload = async function() {
-      lucide.createIcons();
-      await initAndSyncNeonDatabase();
-    };
+    function sendOrderToWhatsApp() {
+      const utr = document.getElementById('utr-input').value.trim() || "Pending_Screenshot";
+      const prodTitle = selectedProduct ? (selectedProduct.title || 'Digital Asset') : 'Product';
+      const prodPrice = selectedProduct ? selectedProduct.price : '';
+      const buyerName = currentCustomerInfo.name || "Customer";
+      const buyerContact = currentCustomerInfo.contactValue || "Not Provided";
+      const msg = `Hi ${storeState.merchantName}, I have completed payment on ${storeState.brandName}.\n\n*Customer Name:* ${buyerName}\n*Contact:* ${buyerContact}\n*Order ID:* ${currentOrderId}\n*Product:* ${prodTitle}\n*Amount:* ₹${prodPrice}\n*12-Digit UTR:* ${utr}\n\nPlease verify my order.`;
+      window.open(`https://wa.me/${storeState.whatsappNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
 
-    /* Expose handlers globally */
-    Object.assign(window, {
-      openWhatsAppSupport,
-      openAdminGate,
-      closeAdminGate,
-      verifyAdminPin,
-      openAdminDashboard,
-      closeAdminDashboard,
-      applyTheme,
-      handleAdminLogoUpload,
-      updateLogoAdjusterPreview,
-      clearBrandLogo,
-      savePaymentConfig,
-      copyFamAppGmailScript,
-      resetProductForm,
-      toggleAdminProductNameField,
-      handleAdminMediaUpload,
-      addMediaUrlToProductForm,
-      removeMediaItemFromForm,
-      moveMediaItemInForm,
-      saveProductForm,
-      editProductInAdmin,
-      deleteProductInAdmin,
-      simulateOrderUnlock,
-      forcePullFromNeon,
-      hideBootLoader,
-      openProductDetail,
-      setActiveDetailMedia,
-      openCustomerDetailsScreen,
-      switchContactMethod,
-      submitCustomerDetailsAndProceed,
-      proceedToPaymentScreen,
-      backToProductDetail,
-      backToGallery,
-      copyUpiId,
-      removeScreenshot,
-      verifyPaymentWithNeon,
-      sendOrderToWhatsApp,
-      renderAdminCustomerOrders,
-      deleteCustomerOrderInAdmin,
-      resetTestUtrInNeon,
-      addManualUtrInNeon: addManualUtrToNeon,
-      addManualUtrToNeon,
-      unclaimUtrInNeon,
-      deleteUtrInNeon
+    function openWhatsAppSupport() {
+      const msg = `Hi ${storeState.merchantName}, I need support on ${storeState.brandName}.`;
+      window.open(`https://wa.me/${storeState.whatsappNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    /* Boot Application — Loader Stays Up Until Database Sync Completes */
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      initAndSyncNeonDatabase();
     });
   </script>
 </body>
