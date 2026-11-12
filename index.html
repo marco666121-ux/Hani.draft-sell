@@ -29,6 +29,22 @@
   
 
   <style>
+    /* Pure-CSS failsafe: loader disappears after 12s even if JavaScript fails */
+    @keyframes bootFailsafe { to { opacity: 0; visibility: hidden; pointer-events: none; } }
+    #db-boot-loader { animation: bootFailsafe 0.3s ease 12s forwards; }
+  </style>
+  <script>
+    // Show any JavaScript error on the loading screen (build v6)
+    window.addEventListener('error', function (e) {
+      var t = document.getElementById('boot-status-text');
+      if (t) t.textContent = 'v6 error: ' + (e.message || 'unknown') + ' (line ' + (e.lineno || '?') + ')';
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      var t = document.getElementById('boot-status-text');
+      if (t) t.textContent = 'v6 error: ' + (e.reason && e.reason.message || e.reason);
+    });
+  </script>
+  <style>
     :root {
       --bg: #000000;
       --surface: #0a0a0a;
@@ -2045,17 +2061,3 @@
     }
 
     function backToProductDetail() {
-      document.getElementById('customer-details-screen').classList.add('hidden');
-      document.getElementById('checkout-workspace').classList.add('hidden');
-      document.getElementById('product-detail-screen').classList.remove('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function updateActiveProductCheckout() {
-      if (!selectedProduct) return;
-      const mediaList = getProductMediaList(selectedProduct);
-      const firstImg = mediaList.find(m => m.type === 'image') || mediaList[0] || { url: selectedProduct.image };
-
-      document.getElementById('active-prod-img').src = firstImg.url;
-      document.getElementById('active-prod-title').textContent = selectedProduct.title || 'Digital Asset';
-      document.getElementById('active-prod-desc').textContent = s
