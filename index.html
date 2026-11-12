@@ -26,13 +26,7 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <!-- Official Neon Serverless Browser Driver (WebSocket Pool + HTTP) -->
-  <script type="module">
-    import { Pool, neon, neonConfig } from 'https://esm.sh/@neondatabase/serverless@0.10.4';
-    neonConfig.fetchConnectionCache = true;
-    neonConfig.useSecureWebSocket = true;
-    neonConfig.pipelineConnect = false;
-    window.neon = { Pool, neon, neonConfig };
-  </script>
+  
 
   <style>
     :root {
@@ -928,13 +922,9 @@
   <script>
     const ADMIN_PIN = "2689";
 
-    /* Direct Neon PostgreSQL Connection Credentials */
-    const NEON_HOST = "ep-weathered-dew-bdpgx13t-pooler.c-8.us-east-2.aws.neon.tech";
-    const NEON_DIRECT_HOST = "ep-weathered-dew-bdpgx13t.c-8.us-east-2.aws.neon.tech";
-    const NEON_CONNECTION_URI = `postgresql://neondb_owner:npg_kvqMbFc4UVD7@${NEON_HOST}/neondb?sslmode=require`;
-    const NEON_DIRECT_URI = `postgresql://neondb_owner:npg_kvqMbFc4UVD7@${NEON_DIRECT_HOST}/neondb?sslmode=require`;
-    let neonHttpSql = null;
-    let neonWsPool = null;
+    /* Supabase connection (publishable key is safe to expose; protect data with RLS) */
+    const SUPABASE_URL = "https://tgmihamwxloffokabjjs.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_kb80B6mw0RfuKLkLbi9ofQ_haee-hiU";
     let isRealNeonConnected = false;
 
     /* Helper: Local Backup Cache for Instant Sync Resilience */
@@ -1225,141 +1215,39 @@
     /* =========================================================================
        NEON POSTGRESQL LIVE CONNECTION ENGINE (WEBSOCKET POOL + FALLBACK)
        ========================================================================= */
-    async function initNeonDriver() {
-      if (neonHttpSql && neonWsPool) return true;
-      for (let i = 0; i < 35; i++) {
-        if (window.neon && (window.neon.neon || window.neon.Pool)) break;
-        await new Promise(r => setTimeout(r, 100));
-      }
+    async function sb(method, table, { query = '', body = null, prefer = '' } = {}) {
       try {
-        if (window.neon && window.neon.Pool && !neonWsPool) {
-          neonWsPool = new window.neon.Pool({ connectionString: NEON_CONNECTION_URI });
-        }
-        if (window.neon && window.neon.neon && !neonHttpSql) {
-          neonHttpSql = window.neon.neon(NEON_CONNECTION_URI);
-        }
-        return !!(neonWsPool || neonHttpSql);
-      } catch (e) {
-        return false;
-      }
-    }
-
-    async function executeNeonSql(queryText, params = []) {
-      await initNeonDriver();
-
-      // 1. Primary Path: WebSocket Pool (Handles large Base64 images & bypasses CORS)
-      if (neonWsPool) {
-        try {
-          const wsResult = await Promise.race([
-            neonWsPool.query(queryText, params),
-            new Promise((_, rej) => setTimeout(() => rej(new Error("WS_TIMEOUT")), 10000))
-          ]);
-          if (wsResult && Array.isArray(wsResult.rows)) {
-            isRealNeonConnected = true;
-            return { rows: wsResult.rows, ok: true };
-          }
-        } catch (wsErr) {}
-      }
-
-      // 2. Secondary Path: Neon Serverless HTTP Driver
-      if (neonHttpSql) {
-        try {
-          if (typeof neonHttpSql.query === 'function') {
-            const res = await Promise.race([
-              neonHttpSql.query(queryText, params),
-              new Promise((_, rej) => setTimeout(() => rej(new Error("HTTP_TIMEOUT")), 8000))
-            ]);
-            isRealNeonConnected = true;
-            return { rows: res.rows || res || [], ok: true };
-          } else if (typeof neonHttpSql === 'function') {
-            const res = await Promise.race([
-              neonHttpSql(queryText, params),
-              new Promise((_, rej) => setTimeout(() => rej(new Error("HTTP_TIMEOUT")), 8000))
-            ]);
-            isRealNeonConnected = true;
-            return { rows: Array.isArray(res) ? res : (res.rows || []), ok: true };
-          }
-        } catch (httpErr) {}
-      }
-
-      // 3. Direct Neon HTTP /sql Endpoint
-      try {
-        const resp = await fetch(`https://${NEON_HOST}/sql`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Neon-Connection-String': NEON_CONNECTION_URI
-          },
-          body: JSON.stringify({ query: queryText, params })
+        const headers = {
+          apikey: SUPABASE_KEY,
+          Authorization: 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json'
+        };
+        if (prefer) headers.Prefer = prefer;
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 12000);
+        const resp = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query ? '?' + query : ''}`, {
+          method, headers, body: body ? JSON.stringify(body) : undefined, signal: ctrl.signal
         });
-        if (resp.ok) {
-          const data = await resp.json();
-          isRealNeonConnected = true;
-          return { rows: data.rows || [], ok: true };
+        clearTimeout(t);
+        if (!resp.ok) {
+          lastDbError = `${table}: ${resp.status} ${(await resp.text()).slice(0, 160)}`;
+          return { rows: [], ok: false };
         }
-      } catch (fetchErr) {}
-
-      return { rows: [], ok: false };
+        const txt = await resp.text();
+        isRealNeonConnected = true;
+        return { rows: txt ? JSON.parse(txt) : [], ok: true };
+      } catch (e) {
+        lastDbError = `${table}: ${e && e.message || e}`;
+        return { rows: [], ok: false };
+      }
     }
-
-    function ensureNeonTablesInBackground() {
-      Promise.all([
-        executeNeonSql(`
-          CREATE TABLE IF NOT EXISTS store_settings (
-            id SERIAL PRIMARY KEY,
-            theme VARCHAR(50) DEFAULT 'bw',
-            brand_name VARCHAR(255) DEFAULT 'MONO.STORE',
-            brand_logo TEXT DEFAULT '',
-            logo_config TEXT DEFAULT '{}',
-            merchant_upi_id VARCHAR(255) DEFAULT 'hanimohd@fam',
-            merchant_name VARCHAR(255) DEFAULT 'Hani Muhammed',
-            whatsapp_number VARCHAR(50) DEFAULT '918095858881',
-            api_endpoint TEXT DEFAULT '',
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          );
-        `),
-        executeNeonSql(`
-          CREATE TABLE IF NOT EXISTS store_products (
-            id VARCHAR(100) PRIMARY KEY,
-            title TEXT,
-            price NUMERIC,
-            show_price BOOLEAN DEFAULT TRUE,
-            badge TEXT,
-            image TEXT,
-            description TEXT,
-            download_url TEXT,
-            sort_order INTEGER DEFAULT 0
-          );
-        `),
-        executeNeonSql(`
-          CREATE TABLE IF NOT EXISTS upi_payments (
-            utr VARCHAR(100) PRIMARY KEY,
-            amount NUMERIC,
-            status VARCHAR(50) DEFAULT 'unclaimed',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          );
-        `),
-        executeNeonSql(`
-          CREATE TABLE IF NOT EXISTS customer_orders (
-            order_id VARCHAR(100) PRIMARY KEY,
-            customer_name TEXT,
-            contact_method VARCHAR(50),
-            contact_value TEXT,
-            product_id VARCHAR(100),
-            product_title TEXT,
-            product_price NUMERIC,
-            utr VARCHAR(100) DEFAULT '',
-            status VARCHAR(50) DEFAULT 'details_entered',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          );
-        `)
-      ]).then(() => {
-        executeNeonSql(`ALTER TABLE store_products ADD COLUMN IF NOT EXISTS show_price BOOLEAN DEFAULT TRUE;`).catch(() => {});
-        executeNeonSql(`ALTER TABLE store_products ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;`).catch(() => {});
-      }).catch(() => {});
-    }
+    const sbSelect = (table, query = '') => sb('GET', table, { query: 'select=*' + (query ? '&' + query : '') });
+    const sbUpsert = (table, row, conflict) => sb('POST', table, { query: 'on_conflict=' + conflict, body: row, prefer: 'resolution=merge-duplicates,return=minimal' });
+    const sbDelete = (table, query) => sb('DELETE', table, { query });
+    const sbUpdate = (table, query, row) => sb('PATCH', table, { query, body: row, prefer: 'return=minimal' });
 
     let dbUnreachable = false;
+    let lastDbError = '';
     function showDbBanner(show) {
       let el = document.getElementById('db-offline-banner');
       if (!show) { if (el) el.remove(); return; }
@@ -1367,11 +1255,11 @@
         el = document.createElement('div');
         el.id = 'db-offline-banner';
         el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:9000;background:#111;color:#fff;border:1px solid #444;border-radius:14px;padding:12px 14px;font:13px/1.4 monospace;display:flex;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 8px 30px rgba(0,0,0,.35)';
-        el.innerHTML = '<span>Can\'t reach the store database. Products may be missing or out of date.</span><button id="db-retry-btn" style="background:#fff;color:#000;border-radius:10px;padding:8px 12px;font-weight:700;white-space:nowrap">Retry</button>';
+        el.innerHTML = '<span>Can\'t reach the store database. Products may be missing or out of date.<br><small id="db-err-detail" style="opacity:.7;word-break:break-all"></small></span><button id="db-retry-btn" style="background:#fff;color:#000;border-radius:10px;padding:8px 12px;font-weight:700;white-space:nowrap">Retry</button>';
         document.body.appendChild(el);
+        document.getElementById('db-err-detail').textContent = (lastDbError || 'no details').slice(0, 300);
         document.getElementById('db-retry-btn').onclick = async () => {
           const b = document.getElementById('db-retry-btn'); b.textContent = '...';
-          neonWsPool = null; neonHttpSql = null;
           await initAndSyncNeonDatabase();
         };
       }
@@ -1383,14 +1271,13 @@
 
       try {
         updateBootLoader(35, "Loading Store...");
-        await initNeonDriver();
         updateBootLoader(65, "Loading Store...");
 
         let settingsRes, prodRes;
         for (let attempt = 0; attempt < 3; attempt++) {
           [settingsRes, prodRes] = await Promise.all([
-            executeNeonSql(`SELECT * FROM store_settings WHERE id = 1 LIMIT 1;`),
-            executeNeonSql(`SELECT * FROM store_products ORDER BY sort_order ASC;`)
+            sbSelect('store_settings', 'id=eq.1&limit=1'),
+            sbSelect('store_products', 'order=sort_order.asc')
           ]);
           if (prodRes.ok || settingsRes.ok) break;
           updateBootLoader(65, "Retrying connection...");
@@ -1399,21 +1286,13 @@
         dbUnreachable = !(prodRes.ok || settingsRes.ok);
 
         if (!prodRes.ok || !prodRes.rows || prodRes.rows.length === 0) {
-          const fallbackProdRes = await executeNeonSql(`SELECT * FROM store_products;`);
+          const fallbackProdRes = await sbSelect('store_products');
           if (fallbackProdRes.ok && fallbackProdRes.rows && fallbackProdRes.rows.length > 0) {
             prodRes = fallbackProdRes;
           }
         }
 
         updateBootLoader(90, "Loading Store...");
-        ensureNeonTablesInBackground();
-
-        // Ensure verified customer UTR 631077597958 (₹900 from Ansil Mh) exists in Neon ledger
-        executeNeonSql(`
-          INSERT INTO upi_payments (utr, amount, status)
-          VALUES ('631077597958', 900, 'unclaimed')
-          ON CONFLICT (utr) DO NOTHING;
-        `).catch(() => {});
 
         if (settingsRes.ok && settingsRes.rows && settingsRes.rows.length > 0) {
           const s = settingsRes.rows[0];
@@ -1435,7 +1314,7 @@
           const rowsToUse = customRows.length > 0 ? customRows : prodRes.rows;
 
           if (customRows.length > 0 && customRows.length !== prodRes.rows.length) {
-            executeNeonSql(`DELETE FROM store_products WHERE id IN ('p1', 'p2', 'p3');`).catch(() => {});
+            sbDelete('store_products', 'id=in.(p1,p2,p3)');
           }
 
           storeState.products = rowsToUse.map(p => {
@@ -1515,43 +1394,17 @@
       saveLocalBackupState();
 
       try {
-        await executeNeonSql(`
-          CREATE TABLE IF NOT EXISTS customer_orders (
-            order_id VARCHAR(100) PRIMARY KEY,
-            customer_name TEXT,
-            contact_method VARCHAR(50),
-            contact_value TEXT,
-            product_id VARCHAR(100),
-            product_title TEXT,
-            product_price NUMERIC,
-            utr VARCHAR(100) DEFAULT '',
-            status VARCHAR(50) DEFAULT 'details_entered',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          );
-        `);
-
-        await executeNeonSql(`
-          INSERT INTO customer_orders (order_id, customer_name, contact_method, contact_value, product_id, product_title, product_price, utr, status, created_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
-          ON CONFLICT (order_id) DO UPDATE SET
-            customer_name = EXCLUDED.customer_name,
-            contact_method = EXCLUDED.contact_method,
-            contact_value = EXCLUDED.contact_value,
-            product_title = EXCLUDED.product_title,
-            product_price = EXCLUDED.product_price,
-            utr = CASE WHEN EXCLUDED.utr <> '' THEN EXCLUDED.utr ELSE customer_orders.utr END,
-            status = EXCLUDED.status;
-        `, [
-          record.order_id,
-          record.customer_name,
-          record.contact_method,
-          record.contact_value,
-          record.product_id,
-          record.product_title,
-          record.product_price,
-          record.utr,
-          record.status
-        ]);
+        await sbUpsert('customer_orders', {
+          order_id: record.order_id,
+          customer_name: record.customer_name,
+          contact_method: record.contact_method,
+          contact_value: record.contact_value,
+          product_id: record.product_id,
+          product_title: record.product_title,
+          product_price: record.product_price,
+          utr: record.utr,
+          status: record.status
+        }, 'order_id');
       } catch (e) {}
     }
 
@@ -1563,52 +1416,18 @@
         const serializedMedia = JSON.stringify(mediaList);
         const showNameFlag = prod.showName !== false;
 
-        const res = await executeNeonSql(`
-          INSERT INTO store_products (id, title, price, show_price, badge, image, description, download_url, sort_order)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-          ON CONFLICT (id) DO UPDATE SET
-            title = EXCLUDED.title,
-            price = EXCLUDED.price,
-            show_price = EXCLUDED.show_price,
-            badge = EXCLUDED.badge,
-            image = EXCLUDED.image,
-            description = EXCLUDED.description,
-            download_url = EXCLUDED.download_url,
-            sort_order = EXCLUDED.sort_order;
-        `, [
-          prod.id,
-          prod.title || "",
-          Number(prod.price) || 0,
-          showNameFlag,
-          serializedMedia,
-          primaryUrl,
-          prod.description || "",
-          prod.downloadUrl || "",
-          orderIdx
-        ]);
-
-        if (!res.ok) {
-          await executeNeonSql(`ALTER TABLE store_products ADD COLUMN IF NOT EXISTS show_price BOOLEAN DEFAULT TRUE;`);
-          await executeNeonSql(`
-            INSERT INTO store_products (id, title, price, badge, image, description, download_url)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            ON CONFLICT (id) DO UPDATE SET
-              title = EXCLUDED.title,
-              price = EXCLUDED.price,
-              badge = EXCLUDED.badge,
-              image = EXCLUDED.image,
-              description = EXCLUDED.description,
-              download_url = EXCLUDED.download_url;
-          `, [
-            prod.id,
-            prod.title || "",
-            Number(prod.price) || 0,
-            serializedMedia,
-            primaryUrl,
-            prod.description || "",
-            prod.downloadUrl || ""
-          ]);
-        }
+        const res = await sbUpsert('store_products', {
+          id: prod.id,
+          title: prod.title || "",
+          price: Number(prod.price) || 0,
+          show_price: showNameFlag,
+          badge: serializedMedia,
+          image: primaryUrl,
+          description: prod.description || "",
+          download_url: prod.downloadUrl || "",
+          sort_order: orderIdx
+        }, 'id');
+        if (!res.ok) return false;
         return true;
       } catch (err) {
         return false;
@@ -1618,41 +1437,29 @@
     async function deleteProductFromNeon(productId) {
       saveLocalBackupState();
       try {
-        await executeNeonSql(`DELETE FROM store_products WHERE id = $1;`, [productId]);
+        await sbDelete('store_products', 'id=eq.' + encodeURIComponent(productId));
       } catch (e) {}
     }
 
     async function pushSettingsToNeon() {
       saveLocalBackupState();
       try {
-        await executeNeonSql(`
-          INSERT INTO store_settings (id, theme, brand_name, brand_logo, logo_config, merchant_upi_id, merchant_name, whatsapp_number, api_endpoint, updated_at)
-          VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, NOW())
-          ON CONFLICT (id) DO UPDATE SET
-            theme = EXCLUDED.theme,
-            brand_name = EXCLUDED.brand_name,
-            brand_logo = EXCLUDED.brand_logo,
-            logo_config = EXCLUDED.logo_config,
-            merchant_upi_id = EXCLUDED.merchant_upi_id,
-            merchant_name = EXCLUDED.merchant_name,
-            whatsapp_number = EXCLUDED.whatsapp_number,
-            api_endpoint = EXCLUDED.api_endpoint,
-            updated_at = NOW();
-        `, [
-          storeState.theme,
-          storeState.brandName,
-          storeState.brandLogo,
-          JSON.stringify(storeState.logoConfig),
-          storeState.merchantUpiId,
-          storeState.merchantName,
-          storeState.whatsappNumber,
-          storeState.apiEndpoint
-        ]);
+        await sbUpsert('store_settings', {
+          id: 1,
+          theme: storeState.theme,
+          brand_name: storeState.brandName,
+          brand_logo: storeState.brandLogo,
+          logo_config: JSON.stringify(storeState.logoConfig),
+          merchant_upi_id: storeState.merchantUpiId,
+          merchant_name: storeState.merchantName,
+          whatsapp_number: storeState.whatsappNumber,
+          updated_at: new Date().toISOString()
+        }, 'id');
       } catch (e) {}
     }
 
     async function forcePullFromNeon() {
-      showToast("Syncing with Neon PostgreSQL...", "info");
+      showToast("Syncing with Supabase...", "info");
       await initAndSyncNeonDatabase();
       renderAdminProductsList();
       renderAdminCustomerOrders();
@@ -2251,533 +2058,4 @@
 
       document.getElementById('active-prod-img').src = firstImg.url;
       document.getElementById('active-prod-title').textContent = selectedProduct.title || 'Digital Asset';
-      document.getElementById('active-prod-desc').textContent = selectedProduct.description || '';
-      document.getElementById('active-prod-price').textContent = selectedProduct.price;
-      document.getElementById('qr-price-tag').textContent = selectedProduct.price;
-
-      const qrBox = document.getElementById('qrcode-box');
-      qrBox.innerHTML = '';
-      const upiLink = `upi://pay?pa=${encodeURIComponent(storeState.merchantUpiId)}&pn=${encodeURIComponent(storeState.merchantName)}&am=${selectedProduct.price}&cu=INR&tn=Order_${currentOrderId}`;
-      new QRCode(qrBox, {
-        text: upiLink,
-        width: 145,
-        height: 145,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M
-      });
-
-      document.getElementById('btn-gpay').href = `tez://upi/pay?pa=${encodeURIComponent(storeState.merchantUpiId)}&pn=${encodeURIComponent(storeState.merchantName)}&am=${selectedProduct.price}&cu=INR`;
-      document.getElementById('btn-phonepe').href = `phonepe://pay?pa=${encodeURIComponent(storeState.merchantUpiId)}&pn=${encodeURIComponent(storeState.merchantName)}&am=${selectedProduct.price}&cu=INR`;
-      document.getElementById('btn-paytmupi').href = `paytmmp://pay?pa=${encodeURIComponent(storeState.merchantUpiId)}&pn=${encodeURIComponent(storeState.merchantName)}&am=${selectedProduct.price}&cu=INR`;
-      document.getElementById('btn-anyupi').href = upiLink;
-    }
-
-    function copyUpiId() {
-      navigator.clipboard?.writeText(storeState.merchantUpiId);
-      showToast("UPI ID copied to clipboard!", "success");
-    }
-
-    /* =========================================================================
-       ADMIN GATE & DASHBOARD
-       ========================================================================= */
-    function openAdminGate() {
-      document.getElementById('admin-pin-modal').classList.remove('hidden');
-      document.getElementById('admin-pin-modal').classList.add('flex');
-      document.getElementById('admin-pin-input').value = '';
-      document.getElementById('admin-pin-input').focus();
-    }
-
-    function closeAdminGate() {
-      document.getElementById('admin-pin-modal').classList.remove('flex');
-      document.getElementById('admin-pin-modal').classList.add('hidden');
-    }
-
-    function verifyAdminPin(e) {
-      e.preventDefault();
-      const entered = document.getElementById('admin-pin-input').value.trim();
-      if (entered === ADMIN_PIN) {
-        closeAdminGate();
-        openAdminDashboard();
-        showToast("Admin access granted", "success");
-      } else {
-        showToast("Incorrect security PIN", "error");
-        document.getElementById('admin-pin-input').value = '';
-      }
-    }
-
-    function openAdminDashboard() {
-      document.getElementById('admin-dashboard-modal').classList.remove('hidden');
-      document.getElementById('cfg-brand-name').value = storeState.brandName;
-      document.getElementById('cfg-upi-id').value = storeState.merchantUpiId;
-      document.getElementById('cfg-merchant-name').value = storeState.merchantName;
-      document.getElementById('cfg-whatsapp').value = storeState.whatsappNumber;
-      document.getElementById('cfg-logo-url').value = storeState.brandLogo || '';
-      if (storeState.logoConfig) {
-        document.getElementById('cfg-logo-size').value = storeState.logoConfig.size || 36;
-        document.getElementById('cfg-logo-zoom').value = storeState.logoConfig.zoom || 100;
-        document.getElementById('cfg-logo-radius').value = storeState.logoConfig.radius || 8;
-        document.getElementById('cfg-logo-fit').value = storeState.logoConfig.fit || 'cover';
-      }
-      updateLogoAdjusterPreview();
-      resetProductForm();
-      renderAdminProductsList();
-      renderAdminCustomerOrders();
-      renderAdminUtrList();
-      lucide.createIcons();
-    }
-
-    function closeAdminDashboard() {
-      document.getElementById('admin-dashboard-modal').classList.add('hidden');
-    }
-
-    function savePaymentConfig() {
-      storeState.brandName = document.getElementById('cfg-brand-name').value.trim() || "MONO.STORE";
-      storeState.merchantUpiId = document.getElementById('cfg-upi-id').value.trim() || "hanimohd@fam";
-      storeState.merchantName = document.getElementById('cfg-merchant-name').value.trim() || "Hani Muhammed";
-      storeState.whatsappNumber = document.getElementById('cfg-whatsapp').value.trim() || "918095858881";
-      storeState.brandLogo = document.getElementById('cfg-logo-url').value.trim();
-      storeState.logoConfig = {
-        size: parseInt(document.getElementById('cfg-logo-size').value) || 36,
-        zoom: parseInt(document.getElementById('cfg-logo-zoom').value) || 100,
-        radius: parseInt(document.getElementById('cfg-logo-radius').value) || 8,
-        fit: document.getElementById('cfg-logo-fit').value || 'cover'
-      };
-
-      pushSettingsToNeon();
-      renderStorefront();
-      showToast("Brand, Logo & Payment settings saved!", "success");
-    }
-
-    function renderAdminProductsList() {
-      const container = document.getElementById('admin-products-list');
-      if (!container) return;
-      container.innerHTML = '';
-
-      storeState.products.forEach((prod, index) => {
-        const mediaList = getProductMediaList(prod);
-        const firstImg = mediaList[0] || { type: 'image', url: prod.image };
-        const hasTitle = prod.showName !== false && prod.title && prod.title.trim() !== '';
-
-        const row = document.createElement('div');
-        row.className = "p-3.5 rounded-2xl theme-surface-elevated border theme-border flex flex-col sm:flex-row sm:items-center justify-between gap-3";
-        row.innerHTML = `
-          <div class="flex items-center gap-3 min-w-0">
-            ${firstImg.type === 'video'
-              ? `<video src="${firstImg.url}" class="w-11 h-11 rounded-xl object-cover border theme-border shrink-0" muted></video>`
-              : `<img src="${firstImg.url}" class="w-11 h-11 rounded-xl object-cover border theme-border shrink-0" onerror="this.src='https://placehold.co/100x100/111/fff?text=IMG'" />`
-            }
-            <div class="min-w-0">
-              <div class="font-bold text-xs truncate">${prod.title || '<span class="theme-text-muted italic">(Unnamed Product)</span>'}</div>
-              <div class="text-[11px] font-mono theme-text-muted">₹${prod.price} • ${hasTitle ? 'Name Shown in Gallery' : 'Image + Price Only in Gallery'} • ${mediaList.length} media item(s)</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <button onclick="editProductInAdmin('${prod.id}')" class="px-3 py-1.5 rounded-lg theme-surface border theme-border hover:border-current text-xs font-mono">
-              Edit
-            </button>
-            <button onclick="removeProductFromAdmin('${prod.id}')" class="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-mono">
-              Delete
-            </button>
-          </div>
-        `;
-        container.appendChild(row);
-      });
-    }
-
-    async function removeProductFromAdmin(prodId) {
-      storeState.products = storeState.products.filter(p => p.id !== prodId);
-      if (selectedProduct && selectedProduct.id === prodId) {
-        selectedProduct = storeState.products[0] || null;
-      }
-      saveLocalBackupState();
-      renderStorefront();
-      renderAdminProductsList();
-      await deleteProductFromNeon(prodId);
-      showToast("Product removed", "info");
-    }
-
-    async function renderAdminCustomerOrders() {
-      const listEl = document.getElementById('admin-customer-orders-list');
-      if (!listEl) return;
-      listEl.innerHTML = `<div class="text-xs font-mono theme-text-muted">Loading customer orders & UTR submissions...</div>`;
-
-      const res = await executeNeonSql(`SELECT * FROM customer_orders ORDER BY created_at DESC LIMIT 60;`);
-      let rows = [];
-      if (res.ok && Array.isArray(res.rows) && res.rows.length > 0) {
-        rows = res.rows;
-        storeState.customerOrders = rows;
-        saveLocalBackupState();
-      } else if (Array.isArray(storeState.customerOrders)) {
-        rows = storeState.customerOrders;
-      }
-
-      listEl.innerHTML = '';
-      if (!rows.length) {
-        listEl.innerHTML = `<div class="text-xs font-mono theme-text-muted p-4 rounded-xl theme-surface-elevated border theme-border text-center">No customer orders or UTR submissions recorded yet.</div>`;
-        return;
-      }
-
-      rows.forEach(order => {
-        const status = (order.status || 'details_entered').toLowerCase();
-        let statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-500/20 text-zinc-300">AWAITING PAYMENT</span>`;
-        if (status === 'verified') {
-          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-300 font-bold">✓ VERIFIED & UNLOCKED</span>`;
-        } else if (status === 'utr_submitted') {
-          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 font-bold">UTR SUBMITTED</span>`;
-        } else if (status === 'duplicate_blocked') {
-          statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-red-500/20 text-red-300 font-bold">⚠ DUPLICATE UTR BLOCKED</span>`;
-        }
-
-        const utrDisplay = order.utr && String(order.utr).trim() !== ''
-          ? `<span class="font-bold text-white bg-white/10 px-2 py-0.5 rounded">UTR: ${order.utr}</span>`
-          : `<span class="theme-text-muted">No UTR entered yet</span>`;
-
-        const approveBtnHtml = (order.utr && String(order.utr).trim().length === 12 && status !== 'verified')
-          ? `<button onclick="approveCustomerOrderUtr('${order.order_id}', '${order.utr}', ${Number(order.product_price) || 0})"
-               class="px-2.5 py-1 rounded-lg bg-emerald-500 text-black font-mono font-bold text-[10px] hover:bg-emerald-400 transition">
-               ✓ Approve UTR
-             </button>`
-          : ``;
-
-        const timeLabel = order.created_at ? new Date(order.created_at).toLocaleString() : '';
-
-        const item = document.createElement('div');
-        item.className = "p-3.5 rounded-2xl theme-surface-elevated border theme-border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs font-mono";
-        item.innerHTML = `
-          <div class="space-y-1 min-w-0">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="font-bold text-sm">${order.customer_name || 'Customer'}</span>
-              <span class="px-2 py-0.5 rounded theme-badge text-[10px]">${order.contact_value || ''}</span>
-              <span class="text-[10px] theme-text-muted">${order.order_id || ''}</span>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 text-[11px] theme-text-muted">
-              <span>Product: <strong class="theme-text">${order.product_title || 'Digital Asset'}</strong> (₹${order.product_price || 0})</span>
-              <span>•</span>
-              ${utrDisplay}
-            </div>
-          </div>
-          <div class="flex sm:flex-col items-center sm:items-end justify-between gap-1.5 shrink-0">
-            <div class="flex items-center gap-1.5">
-              ${approveBtnHtml}
-              ${statusBadge}
-            </div>
-            <span class="text-[10px] theme-text-muted">${timeLabel}</span>
-          </div>
-        `;
-        listEl.appendChild(item);
-      });
-    }
-
-    async function approveCustomerOrderUtr(orderId, utr, amount) {
-      const cleanUtr = String(utr || '').replace(/\D/g, '').trim();
-      if (!cleanUtr) return;
-      await executeNeonSql(`
-        INSERT INTO upi_payments (utr, amount, status)
-        VALUES ($1, $2, 'unclaimed')
-        ON CONFLICT (utr) DO UPDATE SET status = 'unclaimed', amount = EXCLUDED.amount;
-      `, [cleanUtr, Number(amount) || 500]);
-
-      await executeNeonSql(`
-        UPDATE customer_orders SET status = 'verified' WHERE order_id = $1;
-      `, [orderId]);
-
-      showToast(`UTR ${cleanUtr} approved! Customer can now click Verify to download.`, "success");
-      renderAdminCustomerOrders();
-      renderAdminUtrList();
-    }
-
-    async function renderAdminUtrList() {
-      const listEl = document.getElementById('admin-utr-list');
-      if (!listEl) return;
-      listEl.innerHTML = `<div class="text-xs font-mono theme-text-muted">Loading UTR records...</div>`;
-
-      const res = await executeNeonSql(`SELECT utr, amount, status, created_at FROM upi_payments ORDER BY created_at DESC LIMIT 30;`);
-      listEl.innerHTML = '';
-
-      if (!res.rows || res.rows.length === 0) {
-        listEl.innerHTML = `<div class="text-xs font-mono theme-text-muted">No UTR records found.</div>`;
-        return;
-      }
-
-      res.rows.forEach(r => {
-        const isClaimed = r.status === 'claimed';
-        const div = document.createElement('div');
-        div.className = "p-2.5 rounded-xl theme-surface-elevated border theme-border flex items-center justify-between text-xs font-mono";
-        div.innerHTML = `
-          <div class="flex items-center gap-3">
-            <span class="font-bold">${r.utr}</span>
-            <span class="theme-text-muted">₹${r.amount}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="px-2 py-0.5 rounded text-[10px] ${isClaimed ? 'bg-zinc-500/20 text-zinc-400' : 'bg-emerald-500/20 text-emerald-300'}">
-              ${r.status.toUpperCase()}
-            </span>
-            <button onclick="deleteUtrFromNeon('${r.utr}')" class="text-red-400 hover:underline text-[10px]">Delete</button>
-          </div>
-        `;
-        listEl.appendChild(div);
-      });
-    }
-
-    async function addManualUtrToNeon(e) {
-      e.preventDefault();
-      const utr = document.getElementById('admin-utr-id').value.replace(/\D/g, '').trim();
-      const amount = parseFloat(document.getElementById('admin-utr-amount').value);
-      if (utr.length < 6 || isNaN(amount)) {
-        showToast("Enter a valid UTR and amount", "error");
-        return;
-      }
-
-      await executeNeonSql(`
-        INSERT INTO upi_payments (utr, amount, status)
-        VALUES ($1, $2, 'unclaimed')
-        ON CONFLICT (utr) DO UPDATE SET amount = EXCLUDED.amount, status = 'unclaimed';
-      `, [utr, amount]);
-
-      document.getElementById('admin-utr-id').value = '';
-      document.getElementById('admin-utr-amount').value = '';
-      renderAdminUtrList();
-      showToast(`UTR ${utr} (₹${amount}) authorized!`, "success");
-    }
-
-    async function deleteUtrFromNeon(utr) {
-      await executeNeonSql(`DELETE FROM upi_payments WHERE utr = $1;`, [utr]);
-      renderAdminUtrList();
-      showToast(`UTR ${utr} removed`, "info");
-    }
-
-    async function resetTestUtrInNeon() {
-      await executeNeonSql(`
-        INSERT INTO upi_payments (utr, amount, status)
-        VALUES ('631077597958', 900, 'unclaimed')
-        ON CONFLICT (utr) DO UPDATE SET amount = 900, status = 'unclaimed';
-      `);
-      renderAdminUtrList();
-      showToast("Customer UTR 631077597958 (₹900) reset to UNCLAIMED!", "success");
-    }
-
-    function simulateOrderUnlock() {
-      closeAdminDashboard();
-      if (!selectedProduct && storeState.products.length > 0) {
-        selectedProduct = storeState.products[0];
-      }
-      proceedToPaymentScreen();
-      document.getElementById('utr-input').value = "631077597958";
-      document.getElementById('utr-counter').textContent = "12 / 12 digits";
-      unlockProductDelivery("631077597958", selectedProduct ? selectedProduct.price : 900, "ADMIN_SIMULATION");
-    }
-
-    /* =========================================================================
-       IN-BROWSER AI OCR SCREENSHOT SCANNER (TESSERACT.JS V5)
-       ========================================================================= */
-    const dropZone = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('file-input');
-    const utrInput = document.getElementById('utr-input');
-
-    dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('drag-over');
-      if (e.dataTransfer.files.length) handleScreenshotFile(e.dataTransfer.files[0]);
-    });
-
-    fileInput.addEventListener('change', (e) => {
-      if (e.target.files.length) handleScreenshotFile(e.target.files[0]);
-    });
-
-    window.addEventListener('paste', (e) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (let item of items) {
-        if (item.type.startsWith('image/')) {
-          handleScreenshotFile(item.getAsFile());
-          break;
-        }
-      }
-    });
-
-    utrInput.addEventListener('input', () => {
-      const clean = utrInput.value.replace(/\D/g, '').slice(0, 12);
-      utrInput.value = clean;
-      document.getElementById('utr-counter').textContent = `${clean.length} / 12 digits`;
-      document.getElementById('utr-used-banner')?.classList.add('hidden');
-    });
-
-    function removeScreenshot(e) {
-      e.stopPropagation();
-      fileInput.value = '';
-      document.getElementById('drop-empty-view').classList.remove('hidden');
-      document.getElementById('drop-preview-view').classList.add('hidden');
-      document.getElementById('ocr-status-box').classList.add('hidden');
-      document.getElementById('ocr-warning-box').classList.add('hidden');
-      document.getElementById('detection-badge').classList.add('hidden');
-      document.getElementById('detected-amount-badge').classList.add('hidden');
-      document.getElementById('utr-used-banner')?.classList.add('hidden');
-    }
-
-    async function handleScreenshotFile(file) {
-      if (!file || !file.type.startsWith('image/')) {
-        showToast("Please select a valid image file", "error");
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        document.getElementById('preview-image').src = e.target.result;
-        document.getElementById('preview-filename').textContent = file.name;
-        document.getElementById('drop-empty-view').classList.add('hidden');
-        document.getElementById('drop-preview-view').classList.remove('hidden');
-      };
-      reader.readAsDataURL(file);
-
-      await runTesseractOcr(file);
-    }
-
-    async function runTesseractOcr(file) {
-      if (isProcessingOcr) return;
-      isProcessingOcr = true;
-
-      const statusBox = document.getElementById('ocr-status-box');
-      const statusText = document.getElementById('ocr-status-text');
-      const progressBar = document.getElementById('ocr-progress-bar');
-      const warningBox = document.getElementById('ocr-warning-box');
-
-      warningBox.classList.add('hidden');
-      statusBox.classList.remove('hidden');
-      statusText.textContent = "Initializing AI OCR Engine...";
-      progressBar.style.width = "15%";
-
-      try {
-        const result = await Tesseract.recognize(file, 'eng', {
-          logger: (m) => {
-            if (m.status === 'recognizing text') {
-              const pct = Math.round(m.progress * 100);
-              progressBar.style.width = `${Math.max(15, pct)}%`;
-              statusText.textContent = `Scanning Receipt for 12-Digit UTR (${pct}%)...`;
-            }
-          }
-        });
-
-        const rawText = result.data.text || "";
-        const normalized = rawText.replace(/[\s-]/g, '');
-        const utrMatch = rawText.match(/\b\d{12}\b/) || normalized.match(/\d{12}/);
-        const amtMatch = rawText.match(/(?:₹|Rs\.?|INR)\s*([0-9,]+(?:\.\d{1,2})?)/i);
-
-        statusBox.classList.add('hidden');
-
-        if (amtMatch && amtMatch[1]) {
-          const parsedAmt = parseFloat(amtMatch[1].replace(/,/g, ''));
-          if (!isNaN(parsedAmt)) {
-            ocrExtractedData.amount = parsedAmt;
-            const amtBadge = document.getElementById('detected-amount-badge');
-            amtBadge.textContent = `₹${parsedAmt} DETECTED`;
-            amtBadge.classList.remove('hidden');
-          }
-        }
-
-        if (utrMatch && utrMatch[0]) {
-          const detectedUtr = utrMatch[0].slice(0, 12);
-          ocrExtractedData.utr = detectedUtr;
-          utrInput.value = detectedUtr;
-          document.getElementById('utr-counter').textContent = `12 / 12 digits`;
-          document.getElementById('detection-badge').classList.remove('hidden');
-          showToast(`AI extracted UTR: ${detectedUtr}`, "success");
-          saveCustomerOrderSubmission(detectedUtr, "utr_submitted");
-        } else {
-          warningBox.classList.remove('hidden');
-          showToast("Please type the 12-digit UTR shown on your receipt", "info");
-          utrInput.focus();
-        }
-      } catch (err) {
-        statusBox.classList.add('hidden');
-        warningBox.classList.remove('hidden');
-      } finally {
-        isProcessingOcr = false;
-      }
-    }
-
-    /* =========================================================================
-       STRICT ANTI-REUSE UTR & GMAIL / NEON VERIFICATION ENGINE
-       - Verifies BOTH new & old payments (1, 2, 3+ days ago)
-       - Shows clear "Already Used" banner & blocks 2nd attempt
-       ========================================================================= */
-    const LOCAL_CLAIMED_UTRS_KEY = "mono_claimed_utrs_v2";
-    function getLocalClaimedUtrs() {
-      try {
-        return JSON.parse(localStorage.getItem(LOCAL_CLAIMED_UTRS_KEY) || "[]");
-      } catch (e) {
-        return [];
-      }
-    }
-    function markUtrClaimedLocally(utr) {
-      try {
-        const list = getLocalClaimedUtrs();
-        if (!list.includes(utr)) {
-          list.push(utr);
-          localStorage.setItem(LOCAL_CLAIMED_UTRS_KEY, JSON.stringify(list));
-        }
-      } catch (e) {}
-    }
-
-    function showAlreadyUsedUtrAlert(utr) {
-      const usedBanner = document.getElementById('utr-used-banner');
-      const usedSub = document.getElementById('utr-used-sub');
-      const emailBanner = document.getElementById('email-match-banner');
-      if (emailBanner) emailBanner.classList.add('hidden');
-      if (usedBanner) {
-        if (usedSub) {
-          usedSub.textContent = `UTR ${utr} has already been used for a purchase. 2nd attempt is cancelled and blocked.`;
-        }
-        usedBanner.classList.remove('hidden');
-      }
-      document.getElementById('unlocked-card')?.classList.add('hidden');
-      showToast("Already Used! This UTR was already used and is cancelled on 2nd attempt.", "error");
-    }
-
-
-
-    function unlockProductDelivery(utr, amount, method) {
-      document.getElementById('utr-used-banner')?.classList.add('hidden');
-      const banner = document.getElementById('email-match-banner');
-      document.getElementById('email-match-title').textContent = `PAYMENT RECEIVED // ₹${amount} MATCHED WITH EMAIL`;
-      document.getElementById('email-match-sub').textContent = `UTR ${utr} verified (${method}) and locked to Order ${currentOrderId}.`;
-      banner.classList.remove('hidden');
-
-      const unlockedCard = document.getElementById('unlocked-card');
-      document.getElementById('verified-summary-text').textContent = `Order ${currentOrderId} • UTR: ${utr} • ₹${amount} Verified`;
-      document.getElementById('download-button').href = selectedProduct.downloadUrl;
-      unlockedCard.classList.remove('hidden');
-
-      if (typeof confetti === 'function') {
-        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-      }
-      unlockedCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      showToast("Payment verified! Product download unlocked.", "success");
-    }
-
-    function sendOrderToWhatsApp() {
-      const utr = document.getElementById('utr-input').value.trim() || "Pending_Screenshot";
-      const prodTitle = selectedProduct ? (selectedProduct.title || 'Digital Asset') : 'Product';
-      const prodPrice = selectedProduct ? selectedProduct.price : '';
-      const buyerName = currentCustomerInfo.name || "Customer";
-      const buyerContact = currentCustomerInfo.contactValue || "Not Provided";
-      const msg = `Hi ${storeState.merchantName}, I have completed payment on ${storeState.brandName}.\n\n*Customer Name:* ${buyerName}\n*Contact:* ${buyerContact}\n*Order ID:* ${currentOrderId}\n*Product:* ${prodTitle}\n*Amount:* ₹${prodPrice}\n*12-Digit UTR:* ${utr}\n\nPlease verify my order.`;
-      window.open(`https://wa.me/${storeState.whatsappNumber}?text=${encodeURIComponent(msg)}`, '_blank');
-    }
-
-    function openWhatsAppSupport() {
-      const msg = `Hi ${storeState.merchantName}, I need support on ${storeState.brandName}.`;
-      window.open(`https://wa.me/${storeState.whatsappNumber}?text=${encodeURIComponent(msg)}`, '_blank');
-    }
-
-    /* Boot Application — Loader Stays Up Until Database Sync Completes */
-    window.addEventListener('DOMContentLoaded', () => {
-      lucide.createIcons();
-      initAndSyncNeonDatabase();
-    });
-  </script>
-</body>
-</html>
+      document.getElementById('active-prod-desc').textContent = selectedProduct.descript
