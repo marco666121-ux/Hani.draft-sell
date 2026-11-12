@@ -1327,9 +1327,9 @@
         if (prodRes.ok && prodRes.rows && prodRes.rows.length > 0) {
           // Always remove the 3 dummy sample IDs (p1, p2, p3) if present
           const customRows = prodRes.rows.filter(r => !['p1', 'p2', 'p3'].includes(String(r.id)));
-          const rowsToUse = customRows.length > 0 ? customRows : prodRes.rows;
+          const rowsToUse = customRows;
 
-          if (customRows.length > 0 && customRows.length !== prodRes.rows.length) {
+          if (customRows.length !== prodRes.rows.length) {
             sbDelete('store_products', 'id=in.(p1,p2,p3)');
           }
 
@@ -1371,8 +1371,7 @@
       } catch (err) {
         dbUnreachable = true;
         showDbBanner(true);
-        applyTheme(storeState.theme, false);
-        renderStorefront();
+        try { applyTheme(storeState.theme, false); renderStorefront(); } catch (e2) {}
         updateBootLoader(100, "Ready");
         hideBootLoader();
       }
@@ -2055,4 +2054,5 @@
       saveCustomerOrderSubmission("", "awaiting_payment");
 
       document.getElementById('product-detail-screen').classList.add('hidden');
-      document.getElementById('customer-details-screen').classLi
+      document.getElementById('customer-details-screen').classList.add('hidden');
+      document.getElementById('c
