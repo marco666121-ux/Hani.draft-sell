@@ -1,2058 +1,541 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" data-build="v10">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>hani.draft</title>
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest" defer onerror="var f=document.createElement('script');f.src='https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js';document.head.appendChild(f);"></script>
-
-  <!-- QRCode.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
-
-  <!-- Tesseract.js v5 (In-Browser AI OCR) -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
-
-  <!-- Canvas Confetti -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
-
-  <!-- Official Neon Serverless Browser Driver (WebSocket Pool + HTTP) -->
-  
-
-  <style>
-    /* Pure-CSS failsafe: loader disappears after 12s even if JavaScript fails */
-    @keyframes bootFailsafe { to { opacity: 0; visibility: hidden; pointer-events: none; } }
-    #db-boot-loader { animation: bootFailsafe 0.3s ease 12s forwards; }
-  </style>
-  <script>
-    // Show any JavaScript error on the loading screen (build v6)
-    window.addEventListener('error', function (e) {
-      var t = document.getElementById('boot-status-text');
-      if (t) t.textContent = 'v6 error: ' + (e.message || 'unknown') + ' (line ' + (e.lineno || '?') + ')';
-    });
-    window.addEventListener('unhandledrejection', function (e) {
-      var t = document.getElementById('boot-status-text');
-      if (t) t.textContent = 'v6 error: ' + (e.reason && e.reason.message || e.reason);
-    });
-  </script>
-  <style>
-    :root {
-      --bg: #000000;
-      --surface: #0a0a0a;
-      --surface-elevated: #121212;
-      --border: #262626;
-      --border-strong: #ffffff;
-      --text: #ffffff;
-      --text-muted: #a3a3a3;
-      --accent: #ffffff;
-      --accent-fg: #000000;
-      --accent-glow: rgba(255, 255, 255, 0.15);
-      --header-bg: rgba(0, 0, 0, 0.85);
-    }
-
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      margin: 0;
-      padding: 0;
-      overflow-x: hidden;
-      transition: background-color 0.25s ease, color 0.25s ease;
-    }
-
-    .font-mono {
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .theme-bg { background-color: var(--bg); }
-    .theme-surface { background-color: var(--surface); }
-    .theme-surface-elevated { background-color: var(--surface-elevated); }
-    .theme-border { border-color: var(--border); }
-    .theme-border-strong { border-color: var(--border-strong); }
-    .theme-text { color: var(--text); }
-    .theme-text-muted { color: var(--text-muted); }
-
-    .theme-accent-btn {
-      background-color: var(--accent);
-      color: var(--accent-fg);
-      box-shadow: 0 4px 20px var(--accent-glow);
-      transition: all 0.2s ease;
-    }
-    .theme-accent-btn:hover {
-      opacity: 0.92;
-      transform: translateY(-1px);
-    }
-    .theme-accent-btn:active {
-      transform: translateY(0);
-    }
-
-    .theme-badge {
-      background-color: var(--surface-elevated);
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
-
-    .sticky-header {
-      background-color: var(--header-bg);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-    }
-
-    .drag-over {
-      border-color: var(--accent) !important;
-      background-color: var(--surface-elevated) !important;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fade-in {
-      animation: fadeIn 0.25s ease forwards;
-    }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Store</title>
+<style>
+:root{--bg:#fff;--fg:#0b0b0b;--muted:#6b6b6b;--card:#f6f6f7;--border:#e3e3e6;--btn:#0b0b0b;--btnfg:#fff;--danger:#d33;--ok:#1a8f4c}
+:root[data-theme="dark"]{--bg:#0a0a0a;--fg:#f4f4f5;--muted:#9a9aa0;--card:#161618;--border:#2a2a2e;--btn:#f4f4f5;--btnfg:#0a0a0a;--danger:#ff6b6b;--ok:#4ade80}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{height:100%}
+body{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+main.wrap{flex:1 0 auto;width:100%}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.45}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:5}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand b{font-size:19px;letter-spacing:-.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.logo{width:40px;height:40px;border-radius:10px;background:var(--btn);color:var(--btnfg);display:flex;align-items:center;justify-content:center;font-weight:800;overflow:hidden;flex:none}
+.logo img{width:100%;height:100%;object-fit:cover}
+.wrap{max-width:900px;margin:0 auto;padding:0 16px}
+.hero{padding:28px 0 12px}
+.eyebrow{margin:0 0 6px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1{margin:0;font-size:30px;line-height:1.1;letter-spacing:-.8px}
+.muted{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;padding:16px 0 40px}
+@media(min-width:700px){.grid{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;overflow:hidden;cursor:pointer;text-align:left;padding:0;display:block;width:100%}
+.card .img{aspect-ratio:1/1;background:linear-gradient(135deg,#222,#555);display:flex;align-items:center;justify-content:center;color:#fff;font-size:42px;font-weight:800;overflow:hidden}
+.card .img img{width:100%;height:100%;object-fit:cover}
+.card .meta{padding:10px 12px 12px}
+.card .t{font-weight:700;font-size:15px;margin:0 0 2px}
+.card .p{font-weight:800}
+.empty{grid-column:1/-1;text-align:center;padding:50px 10px;color:var(--muted);border:1px dashed var(--border);border-radius:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--border);background:var(--card);color:var(--fg);padding:10px 14px;border-radius:12px;font-weight:600;cursor:pointer;text-decoration:none;font-size:14px}
+.btn.primary{background:var(--btn);color:var(--btnfg);border-color:var(--btn)}
+.btn.wide{width:100%;padding:14px;font-size:15px;border-radius:14px}
+.btn.danger{color:var(--danger)}
+.btn.sm{padding:7px 10px;font-size:13px;border-radius:10px}
+.btn svg,.ico{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+footer{flex:none;border-top:1px solid var(--border);padding:18px 16px calc(18px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted);font-size:13px}
+.linkbtn{background:none;border:1px solid var(--border);border-radius:10px;padding:8px 14px;color:var(--fg);font-weight:600;cursor:pointer}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:700px){.sheet{align-items:center}}
+.sheet-body{background:var(--bg);width:100%;max-width:560px;max-height:92vh;max-height:92dvh;overflow-y:auto;border-radius:22px 22px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom));border:1px solid var(--border)}
+@media(min-width:700px){.sheet-body{border-radius:22px}}
+.sheet-body.big{max-width:760px;height:92vh;height:92dvh}
+.qr{background:#fff;border-radius:16px;padding:12px;width:208px;margin:0 auto;border:1px solid var(--border)}
+.qr svg{display:block;width:100%;height:auto}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.stack>*+*{margin-top:12px}
+label.f{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+input[type=text],input[type=tel],input[type=email],input[type=password],input[type=number],input[type=url],select,textarea{width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 13px;font-size:16px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--fg)}
+textarea{min-height:90px;resize:vertical}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--card);border:1px solid var(--border);padding:5px;border-radius:14px}
+.seg button{border:0;background:none;padding:10px;border-radius:10px;font-weight:600;cursor:pointer}
+.seg button.on{background:var(--btn);color:var(--btnfg)}
+.gallery .main{aspect-ratio:1/1;border-radius:16px;overflow:hidden;background:var(--card);display:flex;align-items:center;justify-content:center}
+.gallery .main img{width:100%;height:100%;object-fit:cover}
+.thumbs{display:flex;gap:8px;margin-top:8px;overflow-x:auto}
+.thumbs img{width:56px;height:56px;border-radius:10px;object-fit:cover;border:2px solid transparent;cursor:pointer;flex:none}
+.thumbs img.on{border-color:var(--fg)}
+.price{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.pre{white-space:pre-wrap}
+.box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0}
+.pubbar{position:sticky;top:-18px;background:var(--bg);padding:10px 0;z-index:2;border-bottom:1px solid var(--border);margin-bottom:12px}
+.note{font-size:13px;color:var(--muted)}
+.plist .item{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:14px;background:var(--card)}
+.plist .item img,.plist .item .ph{width:46px;height:46px;border-radius:10px;object-fit:cover;background:#333;flex:none}
+.plist .item .grow{flex:1;min-width:0}
+.plist .item .grow b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.imgs{display:flex;gap:8px;flex-wrap:wrap}
+.imgs .im{position:relative}
+.imgs img{width:64px;height:64px;object-fit:cover;border-radius:10px}
+.imgs .x{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:0;background:var(--danger);color:#fff;font-weight:700;line-height:1;cursor:pointer}
+h2{margin:0;font-size:20px;letter-spacing:-.3px}
+h3{margin:18px 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--btn);color:var(--btnfg);padding:11px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:100;max-width:90vw;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+</style>
 </head>
-<body class="min-h-screen flex flex-col justify-between selection:bg-white selection:text-black">
-
-  <!-- MINIMAL CUSTOMER-FACING STORE LOADER -->
-  <div id="db-boot-loader" class="fixed inset-0 z-[9999] theme-bg flex flex-col items-center justify-center p-6 transition-opacity duration-300">
-    <div class="w-full max-w-xs flex flex-col items-center text-center">
-      <div class="w-7 h-7 rounded-full border-2 border-current border-t-transparent animate-spin mb-5 opacity-80"></div>
-      <div id="boot-status-text" class="text-xs font-mono uppercase tracking-widest theme-text-muted mb-3">Loading Store...</div>
-      <div class="w-full h-1 rounded-full overflow-hidden theme-surface-elevated border theme-border">
-        <div id="boot-progress-bar" class="h-full transition-all duration-300" style="width: 25%; background-color: var(--accent);"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TOAST CONTAINER -->
-  <div id="toast-container" class="fixed bottom-5 right-5 z-[9990] flex flex-col gap-2 max-w-sm w-full px-4 pointer-events-none"></div>
-
-  <!-- TOP NAVIGATION BAR -->
-  <header class="sticky top-0 z-40 sticky-header border-b theme-border">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-      <div onclick="backToGallery()" class="flex items-center gap-3 cursor-pointer group">
-        <div id="brand-logo-box" class="w-9 h-9 rounded-lg theme-accent-btn flex items-center justify-center font-mono font-black text-sm overflow-hidden shrink-0">
-          <span id="brand-logo-fallback">//</span>
-          <img id="brand-logo-img" src="" alt="Logo" class="w-full h-full object-cover hidden" />
-        </div>
-        <span id="brand-name-display" class="font-extrabold tracking-tight text-base sm:text-lg">MONO.STORE</span>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <button onclick="openWhatsAppSupport()" class="px-3 py-2 rounded-xl theme-surface border theme-border hover:border-current text-xs font-mono flex items-center gap-2 transition">
-          <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
-          <span>Support</span>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- MAIN WORKSPACE -->
-  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8">
-
-    <!-- ===================================================================
-         SCREEN 1: E-COMMERCE PRODUCT GALLERY
-         =================================================================== -->
-    <section id="gallery-screen" class="space-y-6 animate-fade-in">
-      <div class="flex items-end justify-between border-b theme-border pb-4">
-        <div>
-          <p class="text-[11px] font-mono uppercase tracking-widest theme-text-muted">01 // STOREFRONT CATALOG</p>
-          <h1 class="text-2xl sm:text-3xl font-black tracking-tight mt-1">Select a Digital Product</h1>
-        </div>
-        <span id="catalog-count-label" class="text-xs font-mono theme-text-muted">3 Digital Release(s)</span>
-      </div>
-
-      <!-- Product Grid -->
-      <div id="catalog-grid" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6"></div>
-    </section>
-
-    <!-- ===================================================================
-         SCREEN 2: PRODUCT DETAILS PAGE (MULTI-MEDIA GALLERY + SPECS + BUY NOW)
-         =================================================================== -->
-    <section id="product-detail-screen" class="hidden space-y-6 animate-fade-in max-w-3xl mx-auto">
-      <div class="flex items-center justify-between">
-        <button onclick="backToGallery()" class="px-3.5 py-2 rounded-xl theme-surface border theme-border hover:border-current text-xs font-mono flex items-center gap-2 transition">
-          <i data-lucide="arrow-left" class="w-4 h-4"></i>
-          <span>Back to Store</span>
-        </button>
-      </div>
-
-      <div class="theme-surface border theme-border rounded-3xl overflow-hidden shadow-2xl">
-        <!-- Main Active Media Viewer (Image or Video + Optional Overlay) -->
-        <div class="relative aspect-square sm:aspect-[16/10] bg-zinc-950 border-b theme-border overflow-hidden flex items-center justify-center">
-          <img id="detail-prod-img" src="" alt="Product" class="w-full h-full object-cover" />
-          <video id="detail-prod-video" src="" controls playsinline class="w-full h-full object-contain hidden"></video>
-
-          <!-- Optional Price Overlay Badge on Detail Media -->
-          <div id="detail-price-overlay" class="hidden absolute bottom-4 right-4 px-3.5 py-1.5 rounded-xl bg-black/80 backdrop-blur-md border border-white/20 text-white font-mono font-black text-base shadow-xl">
-            ₹<span id="detail-overlay-price-val">900</span>
-          </div>
-        </div>
-
-        <!-- Thumbnail Strip (Only shown if multiple photos/videos exist) -->
-        <div id="detail-media-thumbs" class="hidden p-3 sm:px-6 border-b theme-border flex items-center gap-2.5 overflow-x-auto"></div>
-
-        <!-- Product Details Body -->
-        <div class="p-6 sm:p-8 space-y-6">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b theme-border pb-5">
-            <div id="detail-title-wrap">
-              <h2 id="detail-prod-title" class="text-xl sm:text-2xl font-black tracking-tight">Product Title</h2>
-            </div>
-            <div id="detail-price-box" class="flex items-baseline gap-1.5">
-              <span class="text-xs font-mono uppercase theme-text-muted">Price</span>
-              <span class="text-2xl sm:text-3xl font-mono font-black">₹<span id="detail-prod-price">900</span></span>
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            <div class="text-[11px] font-mono uppercase tracking-widest theme-text-muted">Product Description</div>
-            <p id="detail-prod-desc" class="text-sm sm:text-base leading-relaxed theme-text-muted whitespace-pre-line"></p>
-          </div>
-
-          <!-- Bottom Buy Now Button -->
-          <div class="pt-2">
-            <button onclick="openCustomerDetailsScreen()" class="w-full py-4 px-6 rounded-2xl theme-accent-btn font-mono font-black text-sm sm:text-base uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-xl">
-              <span>Buy Now</span>
-              <i data-lucide="arrow-right" class="w-4 h-4"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===================================================================
-         SCREEN 2.5: CUSTOMER DETAILS GATE (NAME + PHONE OR EMAIL BEFORE PAYMENT)
-         =================================================================== -->
-    <section id="customer-details-screen" class="hidden space-y-6 animate-fade-in max-w-xl mx-auto">
-      <div class="flex items-center justify-between">
-        <button onclick="backToProductDetail()" class="px-3.5 py-2 rounded-xl theme-surface border theme-border hover:border-current text-xs font-mono flex items-center gap-2 transition">
-          <i data-lucide="arrow-left" class="w-4 h-4"></i>
-          <span>Back to Product</span>
-        </button>
-        <span class="text-xs font-mono theme-text-muted">STEP 1 OF 2 // BUYER DETAILS</span>
-      </div>
-
-      <div class="theme-surface border theme-border rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
-        <!-- Product Mini Header -->
-        <div class="flex items-center justify-between gap-4 pb-5 border-b theme-border">
-          <div class="flex items-center gap-3 min-w-0">
-            <img id="cust-step-prod-img" src="" alt="Product" class="w-12 h-12 rounded-xl object-cover border theme-border shrink-0" />
-            <div class="min-w-0">
-              <div class="text-[10px] font-mono uppercase theme-text-muted">Selected Product</div>
-              <h3 id="cust-step-prod-title" class="font-bold text-sm sm:text-base truncate">Digital Asset</h3>
-            </div>
-          </div>
-          <div class="text-right shrink-0">
-            <div class="text-lg sm:text-xl font-mono font-black">₹<span id="cust-step-prod-price">900</span></div>
-          </div>
-        </div>
-
-        <div class="space-y-1">
-          <h2 class="text-xl font-black tracking-tight">Enter Your Details</h2>
-          <p class="text-xs font-mono theme-text-muted">Provide your name and either your phone number (any country) or email to continue to payment.</p>
-        </div>
-
-        <form onsubmit="submitCustomerDetailsAndProceed(event)" class="space-y-5">
-          <!-- Full Name (Required) -->
-          <div class="space-y-1.5">
-            <label class="text-[11px] font-mono uppercase theme-text-muted flex items-center justify-between">
-              <span>Your Full Name <span class="text-red-400">*</span></span>
-              <span class="text-[10px]">Required</span>
-            </label>
-            <input id="cust-name-input" type="text" required placeholder="Enter your full name"
-              class="w-full px-4 py-3.5 rounded-xl theme-surface-elevated border theme-border focus:border-current outline-none font-mono text-sm" />
-          </div>
-
-          <!-- Contact Mode Switcher: Phone Number OR Email -->
-          <div class="space-y-2.5">
-            <div class="flex items-center justify-between">
-              <label class="text-[11px] font-mono uppercase theme-text-muted">Contact Method (Choose Phone or Email) <span class="text-red-400">*</span></label>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 p-1 rounded-xl theme-surface-elevated border theme-border">
-              <button type="button" id="tab-contact-phone" onclick="switchContactMethod('phone')"
-                class="py-2 px-3 rounded-lg font-mono text-xs font-bold transition theme-accent-btn flex items-center justify-center gap-1.5">
-                <i data-lucide="phone" class="w-3.5 h-3.5"></i>
-                <span>Phone Number</span>
-              </button>
-              <button type="button" id="tab-contact-email" onclick="switchContactMethod('email')"
-                class="py-2 px-3 rounded-lg font-mono text-xs font-bold transition theme-text-muted flex items-center justify-center gap-1.5">
-                <i data-lucide="mail" class="w-3.5 h-3.5"></i>
-                <span>Email Address</span>
-              </button>
-            </div>
-
-            <!-- Phone Input Box (Any Country Code + Number) -->
-            <div id="contact-phone-box" class="space-y-1.5 pt-1">
-              <div class="flex gap-2">
-                <input id="cust-country-code" type="text" value="+91" list="country-codes-list" placeholder="+91"
-                  class="w-24 px-3 py-3.5 rounded-xl theme-surface-elevated border theme-border focus:border-current outline-none font-mono text-sm text-center" />
-                <datalist id="country-codes-list">
-                  <option value="+91">🇮🇳 India (+91)</option>
-                  <option value="+1">🇺🇸 USA / Canada (+1)</option>
-                  <option value="+44">🇬🇧 UK (+44)</option>
-                  <option value="+971">🇦🇪 UAE (+971)</option>
-                  <option value="+966">🇸🇦 Saudi Arabia (+966)</option>
-                  <option value="+974">🇶🇦 Qatar (+974)</option>
-                  <option value="+965">🇰🇼 Kuwait (+965)</option>
-                  <option value="+968">🇴🇲 Oman (+968)</option>
-                  <option value="+973">🇧🇭 Bahrain (+973)</option>
-                  <option value="+65">🇸🇬 Singapore (+65)</option>
-                  <option value="+60">🇲🇾 Malaysia (+60)</option>
-                  <option value="+61">🇦🇺 Australia (+61)</option>
-                  <option value="+49">🇩🇪 Germany (+49)</option>
-                  <option value="+33">🇫🇷 France (+33)</option>
-                </datalist>
-                <input id="cust-phone-input" type="tel" placeholder="Enter mobile number (any country)"
-                  class="flex-1 px-4 py-3.5 rounded-xl theme-surface-elevated border theme-border focus:border-current outline-none font-mono text-sm" />
-              </div>
-              <p class="text-[10px] font-mono theme-text-muted">Supports any country code (type your country code or pick from list).</p>
-            </div>
-
-            <!-- Email Input Box -->
-            <div id="contact-email-box" class="hidden space-y-1.5 pt-1">
-              <input id="cust-email-input" type="email" placeholder="you@example.com"
-                class="w-full px-4 py-3.5 rounded-xl theme-surface-elevated border theme-border focus:border-current outline-none font-mono text-sm" />
-              <p class="text-[10px] font-mono theme-text-muted">Your order confirmation will be linked to this email address.</p>
-            </div>
-          </div>
-
-          <button type="submit" class="w-full py-4 px-6 rounded-2xl theme-accent-btn font-mono font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl">
-            <span>Continue to Payment Area</span>
-            <i data-lucide="arrow-right" class="w-4 h-4"></i>
-          </button>
-        </form>
-      </div>
-    </section>
-
-    <!-- ===================================================================
-         SCREEN 3: PAYMENT & AI OCR VERIFICATION WORKSPACE
-         =================================================================== -->
-    <section id="checkout-workspace" class="hidden space-y-6 animate-fade-in">
-      <div class="flex items-center justify-between">
-        <button onclick="openCustomerDetailsScreen()" class="px-3.5 py-2 rounded-xl theme-surface border theme-border hover:border-current text-xs font-mono flex items-center gap-2 transition">
-          <i data-lucide="arrow-left" class="w-4 h-4"></i>
-          <span>Edit Buyer Details</span>
-        </button>
-        <div class="text-xs font-mono theme-text-muted">
-          ORDER ID: <span id="order-id-badge" class="font-bold theme-text">ORD-XXXXXX</span>
-        </div>
-      </div>
-
-      <!-- Selected Product & Buyer Info Summary Bar -->
-      <div class="theme-surface border theme-border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-center gap-3.5 min-w-0">
-          <img id="active-prod-img" src="" alt="Product" class="w-14 h-14 rounded-xl object-cover border theme-border shrink-0" />
-          <div class="min-w-0">
-            <h2 id="active-prod-title" class="font-bold text-sm sm:text-base truncate">Product</h2>
-            <p id="active-buyer-summary" class="text-xs font-mono theme-text-muted truncate mt-0.5">Buyer: —</p>
-            <p id="active-prod-desc" class="hidden"></p>
-          </div>
-        </div>
-        <div class="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 pt-2.5 sm:pt-0 theme-border shrink-0">
-          <div class="text-[10px] font-mono uppercase theme-text-muted">Total Payable</div>
-          <div class="text-xl sm:text-2xl font-mono font-black">₹<span id="active-prod-price">900</span></div>
-        </div>
-      </div>
-
-      <!-- 2-Column Payment & Verification Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        <!-- STEP 1: UPI QR & INSTANT PAY APPS -->
-        <div class="theme-surface border theme-border rounded-3xl p-6 space-y-5 flex flex-col justify-between">
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2.5">
-                <span class="w-6 h-6 rounded-lg theme-accent-btn font-mono text-xs font-black flex items-center justify-center">1</span>
-                <h3 class="font-mono font-bold text-sm uppercase tracking-wider">Scan UPI QR or Tap App</h3>
-              </div>
-              <span class="text-xs font-mono px-2.5 py-1 rounded-md theme-badge">₹<span id="qr-price-tag">900</span></span>
-            </div>
-
-            <!-- QR Code Container -->
-            <div class="flex flex-col items-center justify-center p-5 rounded-2xl theme-surface-elevated border theme-border">
-              <div id="qrcode-box" class="bg-white p-3.5 rounded-2xl shadow-lg"></div>
-              <div class="mt-3 flex items-center gap-2">
-                <span class="text-xs font-mono theme-text-muted">UPI ID:</span>
-                <span id="merchant-vpa-display" class="text-xs font-mono font-bold">hanimohd@fam</span>
-                <button onclick="copyUpiId()" class="px-2 py-0.5 rounded theme-badge text-[10px] font-mono hover:opacity-80">Copy</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Deep Link UPI App Buttons -->
-          <div class="space-y-2.5">
-            <div class="text-[11px] font-mono uppercase theme-text-muted">Instant UPI App Launchers</div>
-            <div class="grid grid-cols-2 gap-2.5">
-              <a id="btn-gpay" href="#" class="py-2.5 px-3 rounded-xl theme-surface-elevated border theme-border hover:border-current text-xs font-mono font-semibold flex items-center justify-center gap-2 transition">
-                <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Google Pay
-              </a>
-              <a id="btn-phonepe" href="#" class="py-2.5 px-3 rounded-xl theme-surface-elevated border theme-border hover:border-current text-xs font-mono font-semibold flex items-center justify-center gap-2 transition">
-                <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> PhonePe
-              </a>
-              <a id="btn-paytmupi" href="#" class="py-2.5 px-3 rounded-xl theme-surface-elevated border theme-border hover:border-current text-xs font-mono font-semibold flex items-center justify-center gap-2 transition">
-                <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Paytm UPI
-              </a>
-              <a id="btn-anyupi" href="#" class="py-2.5 px-3 rounded-xl theme-accent-btn text-xs font-mono font-bold flex items-center justify-center gap-2 transition">
-                <i data-lucide="zap" class="w-3.5 h-3.5"></i> Any UPI App
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <!-- STEP 2: AI SCREENSHOT OCR & UTR VERIFICATION -->
-        <div class="theme-surface border theme-border rounded-3xl p-6 space-y-5 flex flex-col justify-between">
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2.5">
-                <span class="w-6 h-6 rounded-lg theme-accent-btn font-mono text-xs font-black flex items-center justify-center">2</span>
-                <h3 class="font-mono font-bold text-sm uppercase tracking-wider">Confirm Payment (Screenshot or UTR)</h3>
-              </div>
-              <span class="text-[11px] font-mono theme-text-muted flex items-center gap-1">
-                <i data-lucide="scan-line" class="w-3.5 h-3.5"></i> AI OCR Ready
-              </span>
-            </div>
-
-            <!-- Screenshot Dropzone -->
-            <div id="drop-zone" class="border-2 border-dashed theme-border rounded-2xl p-5 text-center cursor-pointer transition hover:border-current relative">
-              <input id="file-input" type="file" accept="image/*" class="hidden" />
-
-              <!-- Empty View -->
-              <div id="drop-empty-view" class="space-y-2 py-3">
-                <div class="w-11 h-11 rounded-2xl theme-surface-elevated border theme-border mx-auto flex items-center justify-center">
-                  <i data-lucide="upload-cloud" class="w-5 h-5"></i>
-                </div>
-                <div class="text-xs font-bold">Upload Payment Screenshot</div>
-                <p class="text-[11px] font-mono theme-text-muted">Tap to select, Drag & Drop, or press Ctrl+V</p>
-              </div>
-
-              <!-- Preview View -->
-              <div id="drop-preview-view" class="hidden space-y-2">
-                <div class="relative inline-block">
-                  <img id="preview-image" src="" alt="Receipt" class="max-h-40 rounded-xl border theme-border mx-auto object-contain" />
-                  <button onclick="removeScreenshot(event)" class="w-6 h-6 rounded-full bg-white text-black font-bold text-xs flex items-center justify-center absolute -top-2 -right-2 shadow-lg">✕</button>
-                </div>
-                <div id="preview-filename" class="text-[11px] font-mono theme-text-muted truncate max-w-xs mx-auto">receipt.jpg</div>
-              </div>
-            </div>
-
-            <!-- OCR Progress Box -->
-            <div id="ocr-status-box" class="hidden p-3.5 rounded-xl theme-surface-elevated border theme-border space-y-2">
-              <div class="flex items-center justify-between text-xs font-mono">
-                <span id="ocr-status-text">Scanning screenshot...</span>
-                <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i>
-              </div>
-              <div class="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                <div id="ocr-progress-bar" class="h-full bg-white transition-all duration-300" style="width: 15%"></div>
-              </div>
-            </div>
-
-            <!-- OCR Manual Fallback Warning -->
-            <div id="ocr-warning-box" class="hidden p-3 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-mono">
-              Could not auto-detect 12-digit UTR from image. Please type your 12-digit UPI UTR / Reference No. below.
-            </div>
-
-            <!-- Email Matched Banner -->
-            <div id="email-match-banner" class="hidden p-3.5 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-300 space-y-1">
-              <div id="email-match-title" class="text-xs font-mono font-black uppercase">PAYMENT RECEIVED // MATCHED WITH EMAIL</div>
-              <div id="email-match-sub" class="text-[11px] font-mono opacity-90">UTR verified in records.</div>
-            </div>
-
-            <!-- Already Used / 2nd Attempt Blocked Banner -->
-            <div id="utr-used-banner" class="hidden p-3.5 rounded-xl border border-red-500/60 bg-red-500/15 text-red-300 space-y-1 animate-fade-in">
-              <div class="text-xs font-mono font-black uppercase flex items-center gap-1.5">
-                <span>⚠ ALREADY USED // 2ND ATTEMPT CANCELLED</span>
-              </div>
-              <div id="utr-used-sub" class="text-[11px] font-mono opacity-90">This UTR was already used to unlock a product and cannot be used a second time.</div>
-            </div>
-
-            <!-- Manual / Auto-Filled 12-Digit UTR Input -->
-            <div class="space-y-1.5">
-              <div class="flex items-center justify-between">
-                <label class="text-[11px] font-mono uppercase theme-text-muted">12-Digit UTR / Transaction ID</label>
-                <div class="flex items-center gap-1.5">
-                  <span id="detected-amount-badge" class="hidden text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">₹900 DETECTED</span>
-                  <span id="detection-badge" class="hidden text-[10px] font-mono px-2 py-0.5 rounded theme-accent-btn font-bold">✓ AI DETECTED</span>
-                  <span id="utr-counter" class="text-[11px] font-mono theme-text-muted">0 / 12 digits</span>
-                </div>
-              </div>
-              <input id="utr-input" type="text" maxlength="18" placeholder="Enter 12-digit UPI UTR number"
-                class="w-full px-4 py-3 rounded-xl theme-surface-elevated border theme-border focus:border-current outline-none font-mono text-sm tracking-wider" />
-            </div>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="space-y-2.5 pt-2">
-
-            <button onclick="sendOrderToWhatsApp()" class="w-full py-3 px-4 rounded-xl theme-surface-elevated border theme-border hover:border-current font-mono text-xs flex items-center justify-center gap-2 transition">
-              <i data-lucide="send" class="w-3.5 h-3.5"></i>
-              <span>Send Details to WhatsApp</span>
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- UNLOCKED DOWNLOAD CARD (HIDDEN UNTIL VERIFIED) -->
-      <div id="unlocked-card" class="hidden theme-surface border-2 border-emerald-500 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-2xl animate-fade-in">
-        <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-black font-black flex items-center justify-center mx-auto">
-          <i data-lucide="unlock" class="w-6 h-6"></i>
-        </div>
-        <div class="space-y-1">
-          <span class="text-[11px] font-mono uppercase tracking-widest text-emerald-400">INSTANT DELIVERY UNLOCKED</span>
-          <h3 class="text-xl sm:text-2xl font-black">Your Digital Product is Ready</h3>
-          <p id="verified-summary-text" class="text-xs font-mono theme-text-muted">Payment verified.</p>
-        </div>
-        <div class="pt-2">
-          <a id="download-button" href="#" target="_blank" rel="noopener noreferrer"
-            class="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-black text-sm uppercase tracking-wider shadow-lg transition">
-            <i data-lucide="download" class="w-4 h-4"></i>
-            <span>Download Protected Product</span>
-          </a>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- FOOTER -->
-  <footer class="border-t theme-border py-8 mt-14">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-4">
-      <div id="footer-brand" class="text-xs font-mono theme-text-muted">© 2026 MONO.STORE // DIRECT DIGITAL FULFILLMENT</div>
-      <button onclick="openAdminGate()" aria-label="System Node" class="w-7 h-7 rounded-lg flex items-center justify-center theme-text-muted opacity-35 hover:opacity-100 transition">
-        <i data-lucide="Command" class="w-3.5 h-3.5"></i>
-      </button>
-    </div>
-  </footer>
-
-  <!-- =====================================================================
-       ADMIN PIN MODAL
-       ===================================================================== -->
-  <div id="admin-pin-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
-    <div class="theme-surface border theme-border rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-2xl">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <i data-lucide="lock" class="w-4 h-4"></i>
-          <h3 class="font-mono font-bold text-sm uppercase">Admin Authentication</h3>
-        </div>
-        <button onclick="closeAdminGate()" class="text-xs font-mono theme-text-muted hover:text-white">ESC</button>
-      </div>
-      <form onsubmit="verifyAdminPin(event)" class="space-y-4">
-        <input id="admin-pin-input" type="password" inputmode="numeric" placeholder="Enter Security PIN"
-          class="w-full px-4 py-3 rounded-xl theme-surface-elevated border theme-border text-center font-mono text-lg tracking-widest outline-none focus:border-current" />
-        <button type="submit" class="w-full py-3 rounded-xl theme-accent-btn font-mono font-bold text-xs uppercase tracking-wider">
-          Unlock Console
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- =====================================================================
-       ADMIN CONTROL CENTER MODAL
-       ===================================================================== -->
-  <div id="admin-dashboard-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-lg hidden overflow-y-auto p-4 sm:p-6">
-    <div class="max-w-4xl mx-auto theme-surface border theme-border rounded-3xl p-5 sm:p-8 space-y-8 my-6 shadow-2xl">
-
-      <!-- Admin Header -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b theme-border pb-5">
-        <div class="space-y-1.5">
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="text-[10px] font-mono px-2.5 py-0.5 rounded theme-badge uppercase">ROOT ACCESS GRANTED</span>
-            <span id="admin-db-badge" class="text-[10px] font-mono px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
-              ● ONLINE // NEON POSTGRESQL
-            </span>
-          </div>
-          <h2 class="text-xl sm:text-2xl font-black tracking-tight">Storefront Admin Control Center</h2>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2">
-          <button onclick="forcePullFromNeon()" class="px-3.5 py-2 rounded-xl theme-surface-elevated border theme-border hover:border-current text-xs font-mono flex items-center gap-1.5">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Sync DB
-          </button>
-          <button onclick="simulateOrderUnlock()" class="px-3.5 py-2 rounded-xl theme-surface-elevated border theme-border hover:border-current text-xs font-mono flex items-center gap-1.5">
-            <i data-lucide="play" class="w-3.5 h-3.5"></i> Test Unlock
-          </button>
-          <button onclick="closeAdminDashboard()" class="px-4 py-2 rounded-xl theme-accent-btn text-xs font-mono font-bold">
-            Done & Close
-          </button>
-        </div>
-      </div>
-
-      <!-- 1. COLOR THEME CHANGER (DARK & LIGHT COLLECTIONS) -->
-      <div class="space-y-4 border-b theme-border pb-7">
-        <div class="flex items-center gap-2">
-          <i data-lucide="palette" class="w-4 h-4"></i>
-          <h3 class="font-mono font-bold text-xs uppercase tracking-wider">1. Live Color Theme Changer (Dark & Light Collection)</h3>
-        </div>
-
-        <div class="text-[11px] font-mono uppercase theme-text-muted">Dark Themes</div>
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-          <button onclick="applyTheme('bw')" class="p-3 rounded-2xl theme-surface-elevated border theme-border hover:border-white text-left space-y-1.5 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="w-4 h-4 rounded-full bg-black border border-white"></span>
-              <span class="w-4 h-4 rounded-full bg-white"></span>
-            </div>
-            <div class="font-bold text-xs">Monochrome B&W</div>
-            <div class="text-[10px] theme-text-muted">Default Pure Dark</div>
-          </button>
-
-          <button onclick="applyTheme('chrome')" class="p-3 rounded-2xl theme-surface-elevated border theme-border hover:border-white text-left space-y-1.5 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="w-4 h-4 rounded-full bg-zinc-900 border border-zinc-400"></span>
-              <span class="w-4 h-4 rounded-full bg-zinc-300"></span>
-            </div>
-            <div class="font-bold text-xs">Liquid Chrome</div>
-            <div class="text-[10px] theme-text-muted">Brushed Silver</div>
-          </button>
-
-          <button onclick="applyTheme('emerald')" class="p-3 rounded-2xl theme-surface-elevated border theme-border hover:border-white text-left space-y-1.5 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="w-4 h-4 rounded-full bg-emerald-950 border border-emerald-400"></span>
-              <span class="w-4 h-4 rounded-full bg-emerald-400"></span>
-            </div>
-            <div class="font-bold text-xs">Emerald Cyber</div>
-            <div class="text-[10px] theme-text-muted">Matrix Green</div>
-          </button>
-
-          <button onclick="applyTheme('violet')" class="p-3 rounded-2xl theme-surface-elevated border theme-border hover:border-white text-left space-y-1.5 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="w-4 h-4 rounded-full bg-indigo-950 border border-indigo-400"></span>
-              <span class="w-4 h-4 rounded-full bg-indigo-400"></span>
-            </div>
-            <div class="font-bold text-xs">Royal Violet</div>
-            <div class="text-[10px] theme-text-muted">Obsidian Purple</div>
-          </button>
-
-          <button onclick="applyTheme('crimson')" class="p-3 rounded-2xl theme-surface-elevated border theme-border hover:border-white text-left space-y-1.5 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="w-4 h-4 rounded-full bg-red-950 border border-red-400"></span>
-              <span class="w-4 h-4 rounded-full bg-red-500"></span>
-            </div>
-            <div class="font-bold text-xs">Crimson Noir</div>
-            <div class="text-[10px] theme-text-muted">Sharp Red</div>
-          </button>
-        </div>
-
-        <div class="text-[11px] font-mono uppercase theme-text-muted pt-2">Light Theme Collection</div>
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-          <button onclick="applyTheme('light_bw')" class="p-3 rounded-2xl theme-surface-elevated border theme-border hover:border-current text-left space-y-1.5 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="w-4 h-4 rounded-full bg-white border border-black"></span>
-              <span class="w-4 h-4 rounded-full bg-black"></span>
-            </div>
-            <div class="font-bold text-xs">Monochrome Light</div>
-            <div class="text-[10px] theme-text-muted">Pure White & Black</div>
-          </button>
-
-          <button onclick="applyTheme('light_ivory')" class="p-3 rounded-2xl theme-surface-elevated border theme-border hover:border-current text-left space-y-1.5 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="w-4 h-4 rounded-full bg-[#faf8f5] border border-stone-700"></span>
-              <span class="w-4 h-4 rounded-full bg-stone-800"></span>
-            </div>
-            <div class="font-bold text-xs">Warm Ivory</div>
-            <div class="text-[10px] theme-text-muted">Editorial Paper</div>
-          </button>
-
-          <button onclick="applyTheme('light_slate')" class="p-3 rounded-2xl theme-surface-elevated border theme-border hover:border-current text-left space-y-1.5 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="w-4 h-4 rounded-full bg-slate-100 border border-slate-700"></span>
-              <span class="w-4 h-4 rounded-full bg-slate-900"></span>
-            </div>
-            <div class="font-bold text-xs">Frosted Slate</div>
-            <div class="text-[10px] theme-text-muted">Clean Daylight</div>
-          </button>
-
-          <button onclick="applyTheme('light_mint')" class="p-3 rounded-2xl theme-surface-elevated border theme-border hover:border-current text-left space-y-1.5 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="w-4 h-4 rounded-full bg-emerald-50 border border-emerald-700"></span>
-              <span class="w-4 h-4 rounded-full bg-emerald-600"></span>
-            </div>
-            <div class="font-bold text-xs">Mint Daylight</div>
-            <div class="text-[10px] theme-text-muted">Soft Emerald</div>
-          </button>
-
-          <button onclick="applyTheme('light_rose')" class="p-3 rounded-2xl theme-surface-elevated border theme-border hover:border-current text-left space-y-1.5 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="w-4 h-4 rounded-full bg-rose-50 border border-rose-700"></span>
-              <span class="w-4 h-4 rounded-full bg-rose-600"></span>
-            </div>
-            <div class="font-bold text-xs">Rose Quartz</div>
-            <div class="text-[10px] theme-text-muted">Minimalist Blush</div>
-          </button>
-        </div>
-      </div>
-
-      <!-- 2. BRAND LOGO UPLOADER & PAYMENT DETAILS EDITOR -->
-      <div class="space-y-5 border-b theme-border pb-7">
-        <div class="flex items-center gap-2">
-          <i data-lucide="credit-card" class="w-4 h-4"></i>
-          <h3 class="font-mono font-bold text-xs uppercase tracking-wider">2. Brand Logo, Payment & WhatsApp Editor</h3>
-        </div>
-
-        <!-- Brand Logo & Adjuster Box -->
-        <div class="p-4 rounded-2xl theme-surface-elevated border theme-border space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <div class="text-xs font-bold">Brand Logo & Interactive Adjuster</div>
-              <div class="text-[11px] font-mono theme-text-muted">Upload a logo image and adjust size, zoom, and corner radius</div>
-            </div>
-            <div class="flex items-center gap-3 p-2.5 rounded-xl theme-surface border theme-border">
-              <div id="admin-logo-preview-box" class="w-9 h-9 rounded-lg theme-accent-btn flex items-center justify-center font-mono font-black text-xs overflow-hidden shrink-0">
-                <span id="admin-logo-preview-fallback">//</span>
-                <img id="admin-logo-preview-img" src="" alt="Preview" class="w-full h-full object-cover hidden" />
-              </div>
-              <span id="admin-logo-preview-brand" class="font-extrabold text-sm">MONO.STORE</span>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            <input id="cfg-logo-url" type="text" oninput="updateLogoAdjusterPreview()" placeholder="Paste Logo Image URL or Upload ->"
-              class="sm:col-span-2 px-3.5 py-2.5 rounded-xl theme-surface border theme-border font-mono text-xs outline-none" />
-            <div class="flex items-center gap-2">
-              <label class="flex-1 py-2.5 px-3 rounded-xl theme-accent-btn font-mono text-xs font-bold text-center cursor-pointer">
-                Upload Logo
-                <input type="file" accept="image/*" onchange="handleAdminLogoUpload(event)" class="hidden" />
-              </label>
-              <button type="button" onclick="clearBrandLogo()" class="px-3 py-2.5 rounded-xl theme-surface border theme-border text-xs font-mono">Reset</button>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-            <div>
-              <div class="flex justify-between text-[10px] font-mono theme-text-muted">
-                <span>Box Size</span><span id="lbl-logo-size">36px</span>
-              </div>
-              <input id="cfg-logo-size" type="range" min="28" max="56" value="36" oninput="updateLogoAdjusterPreview()" class="w-full" />
-            </div>
-            <div>
-              <div class="flex justify-between text-[10px] font-mono theme-text-muted">
-                <span>Image Zoom</span><span id="lbl-logo-zoom">100%</span>
-              </div>
-              <input id="cfg-logo-zoom" type="range" min="50" max="200" value="100" oninput="updateLogoAdjusterPreview()" class="w-full" />
-            </div>
-            <div>
-              <div class="flex justify-between text-[10px] font-mono theme-text-muted">
-                <span>Corner Radius</span><span id="lbl-logo-radius">8px</span>
-              </div>
-              <input id="cfg-logo-radius" type="range" min="0" max="28" value="8" oninput="updateLogoAdjusterPreview()" class="w-full" />
-            </div>
-            <div>
-              <div class="text-[10px] font-mono theme-text-muted mb-1">Fit Mode</div>
-              <select id="cfg-logo-fit" onchange="updateLogoAdjusterPreview()" class="w-full px-2.5 py-1.5 rounded-lg theme-surface border theme-border font-mono text-xs">
-                <option value="cover">Cover (Fill)</option>
-                <option value="contain">Contain (Fit)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Store & UPI Fields -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="text-[11px] font-mono uppercase theme-text-muted">Store Brand Name</label>
-            <input id="cfg-brand-name" type="text" oninput="updateLogoAdjusterPreview()" class="w-full mt-1 px-3.5 py-2.5 rounded-xl theme-surface-elevated border theme-border font-mono text-xs" />
-          </div>
-          <div>
-            <label class="text-[11px] font-mono uppercase theme-text-muted">Merchant UPI ID (VPA)</label>
-            <input id="cfg-upi-id" type="text" class="w-full mt-1 px-3.5 py-2.5 rounded-xl theme-surface-elevated border theme-border font-mono text-xs" />
-          </div>
-          <div>
-            <label class="text-[11px] font-mono uppercase theme-text-muted">Merchant Payee Name</label>
-            <input id="cfg-merchant-name" type="text" class="w-full mt-1 px-3.5 py-2.5 rounded-xl theme-surface-elevated border theme-border font-mono text-xs" />
-          </div>
-          <div>
-            <label class="text-[11px] font-mono uppercase theme-text-muted">WhatsApp Support Number (with Country Code)</label>
-            <input id="cfg-whatsapp" type="text" class="w-full mt-1 px-3.5 py-2.5 rounded-xl theme-surface-elevated border theme-border font-mono text-xs" />
-          </div>
-          
-        </div>
-
-        <button onclick="savePaymentConfig()" class="px-5 py-3 rounded-xl theme-accent-btn font-mono font-bold text-xs uppercase tracking-wider">
-          Save Brand & Payment Settings
-        </button>
-      </div>
-
-      <!-- 3. PRODUCT EDITOR & MULTI-MEDIA GALLERY MANAGER -->
-      <div class="space-y-5 border-b theme-border pb-7">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <i data-lucide="package-plus" class="w-4 h-4"></i>
-            <h3 class="font-mono font-bold text-xs uppercase tracking-wider">3. Product Manager (Photos, Videos & Name Toggle)</h3>
-          </div>
-          <button onclick="resetProductForm()" class="px-3 py-1.5 rounded-lg theme-surface-elevated border theme-border text-[11px] font-mono">
-            + New Product
-          </button>
-        </div>
-
-        <!-- Product Add/Edit Form -->
-        <form onsubmit="saveProductForm(event)" class="p-4 sm:p-5 rounded-2xl theme-surface-elevated border theme-border space-y-4">
-          <input id="prod-form-id" type="hidden" value="" />
-
-          <!-- Toggle: Show or Hide Product Name -->
-          <div class="p-3.5 rounded-xl theme-surface border theme-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <div class="text-xs font-bold">Show Product Name in Gallery</div>
-              <div class="text-[11px] font-mono theme-text-muted">Turn OFF to hide the name in the main Product Gallery (the name will still show on the Product Details page)</div>
-            </div>
-            <label class="inline-flex items-center gap-2 cursor-pointer shrink-0">
-              <input id="prod-form-show-name" type="checkbox" checked onchange="toggleAdminProductNameField()" class="w-4 h-4 accent-white rounded" />
-              <span class="text-xs font-mono font-bold">Show in Gallery</span>
-            </label>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div id="prod-form-title-wrap">
-              <label class="text-[11px] font-mono uppercase theme-text-muted">Product Name (Shown on Product Page)</label>
-              <input id="prod-form-title" type="text" required placeholder="Enter product name..."
-                class="w-full mt-1 px-3.5 py-2.5 rounded-xl theme-surface border theme-border font-mono text-xs" />
-            </div>
-
-            <div>
-              <label class="text-[11px] font-mono uppercase theme-text-muted">Product Price (₹ INR — Overlaid on Image)</label>
-              <input id="prod-form-price" type="number" step="any" required placeholder="900"
-                class="w-full mt-1 px-3.5 py-2.5 rounded-xl theme-surface border theme-border font-mono text-xs" />
-            </div>
-          </div>
-
-          <!-- Unified Product Media Manager (Add/Delete/Arrange Photos & Videos + Overlay) -->
-          <div class="p-4 rounded-xl theme-surface border theme-border space-y-3">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <div class="text-xs font-bold">Product Photos & Videos (Delete or Arrange Order)</div>
-                <div class="text-[11px] font-mono theme-text-muted">First item is the main gallery cover. Upload multiple photos or videos, delete unwanted ones, or arrange with ◀ ▶</div>
-              </div>
-              <label class="px-3.5 py-2 rounded-xl theme-accent-btn font-mono text-xs font-bold cursor-pointer text-center shrink-0">
-                + Upload Photos / Video
-                <input id="prod-media-upload-input" type="file" accept="image/*,video/*" multiple onchange="handleAdminMediaUpload(event)" class="hidden" />
-              </label>
-            </div>
-
-            <!-- Add Media by URL -->
-            <div class="flex gap-2">
-              <input id="prod-form-img" type="text" placeholder="Or paste Photo / Video (.mp4) URL here..."
-                class="flex-1 px-3.5 py-2 rounded-xl theme-surface-elevated border theme-border font-mono text-xs" />
-              <button type="button" onclick="addMediaUrlToProductForm()" class="px-3.5 py-2 rounded-xl theme-surface-elevated border theme-border hover:border-current font-mono text-xs shrink-0">
-                Add URL
-              </button>
-            </div>
-
-            <!-- Interactive Media Tray (Delete & Arrange Overlay Order) -->
-            <div id="admin-media-tray" class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1"></div>
-          </div>
-
-          <div>
-            <label class="text-[11px] font-mono uppercase theme-text-muted">Protected Product Download Link (URL Only)</label>
-            <input id="prod-form-download" type="url" required placeholder="https://drive.google.com/..."
-              class="w-full mt-1 px-3.5 py-2.5 rounded-xl theme-surface border theme-border font-mono text-xs" />
-          </div>
-
-          <div>
-            <label class="text-[11px] font-mono uppercase theme-text-muted">Product Description</label>
-            <textarea id="prod-form-desc" rows="3" placeholder="Full product details shown when customer taps the image..."
-              class="w-full mt-1 px-3.5 py-2.5 rounded-xl theme-surface border theme-border font-mono text-xs"></textarea>
-          </div>
-
-          <div class="flex items-center gap-2.5">
-            <button type="submit" id="prod-form-submit-btn" class="px-5 py-3 rounded-xl theme-accent-btn font-mono font-bold text-xs uppercase tracking-wider">
-              Save Product to Storefront
-            </button>
-            <button type="button" onclick="resetProductForm()" class="px-4 py-3 rounded-xl theme-surface border theme-border font-mono text-xs">
-              Clear Form
-            </button>
-          </div>
-        </form>
-
-        <!-- Existing Products List -->
-        <div id="admin-products-list" class="space-y-2.5"></div>
-      </div>
-
-      <!-- 4. CUSTOMER ORDERS, BUYER DETAILS & UTR SUBMISSIONS LOG -->
-      <div class="space-y-4 border-b theme-border pb-7">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div class="flex items-center gap-2">
-            <i data-lucide="users" class="w-4 h-4"></i>
-            <div>
-              <h3 class="font-mono font-bold text-xs uppercase tracking-wider">4. Customer Orders, Buyer Data & UTR Submissions</h3>
-              <p class="text-[11px] font-mono theme-text-muted">Live log of everyone who entered their details, uploaded screenshots, or submitted a UTR</p>
-            </div>
-          </div>
-          <button onclick="renderAdminCustomerOrders()" class="px-3 py-1.5 rounded-lg theme-surface-elevated border theme-border text-[11px] font-mono flex items-center gap-1.5 self-start sm:self-auto">
-            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh Orders
-          </button>
-        </div>
-
-        <div id="admin-customer-orders-list" class="space-y-2.5 max-h-96 overflow-y-auto pr-1"></div>
-      </div>
-
-      <!-- 5. NEON UTR LEDGER MANAGER -->
-      <div class="space-y-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <i data-lucide="database" class="w-4 h-4"></i>
-            <h3 class="font-mono font-bold text-xs uppercase tracking-wider">5. Live UPI UTR Payment Ledger</h3>
-          </div>
-          <button onclick="resetTestUtrInNeon()" class="px-3 py-1.5 rounded-lg theme-surface-elevated border theme-border text-[11px] font-mono">
-            Seed Test UTR (631077597958)
-          </button>
-        </div>
-
-        <form onsubmit="addManualUtrToNeon(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          <input id="admin-utr-id" type="text" required placeholder="12-Digit UTR Number"
-            class="px-3.5 py-2.5 rounded-xl theme-surface-elevated border theme-border font-mono text-xs" />
-          <input id="admin-utr-amount" type="number" step="any" required placeholder="Amount (₹)"
-            class="px-3.5 py-2.5 rounded-xl theme-surface-elevated border theme-border font-mono text-xs" />
-          <button type="submit" class="py-2.5 px-4 rounded-xl theme-accent-btn font-mono font-bold text-xs uppercase">
-            + Pre-Authorize UTR
-          </button>
-        </form>
-
-        <div id="admin-utr-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- =====================================================================
-       APPLICATION JAVASCRIPT
-       ===================================================================== -->
-  <script>
-    const ADMIN_PIN = "2689";
-
-    /* Supabase connection (publishable key is safe to expose; protect data with RLS) */
-    const SUPABASE_URL = "https://tgmihamwxloffokabjjs.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_kb80B6mw0RfuKLkLbi9ofQ_haee-hiU";
-    let isRealNeonConnected = false;
-
-    /* Helper: Local Backup Cache for Instant Sync Resilience */
-    const LOCAL_STORAGE_KEY = "mono_store_cloud_cache_v3";
-    function saveLocalBackupState() {
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
-          theme: storeState.theme,
-          brandName: storeState.brandName,
-          brandLogo: storeState.brandLogo,
-          logoConfig: storeState.logoConfig,
-          merchantUpiId: storeState.merchantUpiId,
-          merchantName: storeState.merchantName,
-          whatsappNumber: storeState.whatsappNumber,
-          apiEndpoint: storeState.apiEndpoint,
-          products: storeState.products,
-          customerOrders: storeState.customerOrders || []
-        }));
-      } catch (e) {}
+<body>
+
+<header class="top">
+  <div class="brand"><span class="logo" id="logo"></span><b id="brandName"></b></div>
+  <a class="btn" id="supportBtn" target="_blank" rel="noopener"></a>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Storefront catalog</p>
+    <h1>Select a digital product</h1>
+    <p class="muted" id="count"></p>
+  </section>
+  <div class="grid" id="grid"></div>
+</main>
+
+<footer>
+  <span id="footText"></span>
+</footer>
+
+<div class="sheet" id="sheet" hidden><div class="sheet-body" id="sheetBody"></div></div>
+<div id="toast" hidden></div>
+
+<script id="store-data" type="application/json">{"stamp": 0, "state": {"theme": "light", "brandName": "hani.draft", "brandLogo": "", "merchantUpiId": "hanimohd@fam", "merchantName": "Hani Muhammed", "whatsappNumber": "918095858881", "adminPin": "2689", "products": [{"id": "p-start", "title": "Create Viral Kerala Reels with AI + Code", "price": 149, "description": "Step-by-step guide to planning, animating, voicing and editing viral Kerala reels with AI and code.\nIncludes the PDF guide, real examples and code prompts.", "images": []}]}}</script>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- icons (inline SVG, no library) ---------- */
+  var ICONS = {
+    chat: '<path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+    copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+    download: '<path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/>',
+    send: '<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>',
+    arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>'
+  };
+  function icon(n) { return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[n] || '') + '</svg>'; }
+
+  /* ---------- helpers ---------- */
+  function $(id) { return document.getElementById(id); }
+  function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function money(n) { return '\u20B9' + Number(n || 0).toLocaleString('en-IN'); }
+  function uid() { return 'p-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function orderId() { var c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', s = 'ORD-'; for (var i = 0; i < 6; i++) s += c[Math.floor(Math.random() * c.length)]; return s; }
+  var toastTimer;
+  function toast(msg) { var t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 3200); }
+
+  /* ---------- state: published data + draft in this browser ---------- */
+  var PUB = { stamp: 0, state: {} };
+  try { PUB = JSON.parse($('store-data').textContent) || PUB; } catch (e) {}
+  var DRAFT_KEY = 'static_site_draft_v2';
+  var S = JSON.parse(JSON.stringify(PUB.state || {}));
+  var hasDraft = false;
+  try {
+    var raw = localStorage.getItem(DRAFT_KEY);
+    if (raw) {
+      var d = JSON.parse(raw);
+      if (d && d.base === PUB.stamp && d.state) { S = d.state; hasDraft = true; }
+      else localStorage.removeItem(DRAFT_KEY);
     }
+  } catch (e) {}
+  S.products = Array.isArray(S.products) ? S.products : [];
+  function saveDraft() {
+    hasDraft = true;
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ base: PUB.stamp, state: S })); }
+    catch (e) { toast('Browser storage is full. Use image links instead of uploads.'); }
+  }
 
-    function loadLocalBackupState() {
-      try {
-        const keys = [LOCAL_STORAGE_KEY, "mono_store_cloud_cache_v2", "mono_store_cloud_cache_v1", "mono_store_state"];
-        for (const k of keys) {
-          const raw = localStorage.getItem(k);
-          if (!raw) continue;
-          const parsed = JSON.parse(raw);
-          if (parsed && Array.isArray(parsed.products) && parsed.products.length > 0) {
-            // Filter out default sample products (p1, p2, p3) if real custom products exist
-            const customProds = parsed.products.filter(p => !['p1', 'p2', 'p3'].includes(String(p.id)));
-            if (customProds.length > 0) {
-              parsed.products = customProds;
-              Object.assign(storeState, parsed);
-              return true;
-            }
-          }
+  /* ---------- storefront ---------- */
+  function renderStore() {
+    document.documentElement.setAttribute('data-theme', S.theme === 'dark' ? 'dark' : 'light');
+    var brand = S.brandName || 'My Store';
+    document.title = brand;
+    $('brandName').textContent = brand;
+    $('footText').textContent = '\u00A9 ' + new Date().getFullYear() + ' ' + brand;
+    var lg = $('logo');
+    lg.innerHTML = S.brandLogo ? '<img alt="" src="' + esc(S.brandLogo) + '">' : esc(brand.charAt(0).toUpperCase());
+    var sb = $('supportBtn');
+    sb.innerHTML = icon('chat') + 'Support';
+    sb.href = 'https://wa.me/' + String(S.whatsappNumber || '').replace(/\D/g, '');
+    $('count').textContent = S.products.length + (S.products.length === 1 ? ' digital release' : ' digital releases');
+    var g = $('grid');
+    if (!S.products.length) { g.innerHTML = '<div class="empty">No products yet.</div>'; return; }
+    g.innerHTML = S.products.map(function (p) {
+      var im = (p.images && p.images[0]) ? '<img alt="" src="' + esc(p.images[0]) + '">' : esc((p.title || '?').charAt(0).toUpperCase());
+      return '<button type="button" class="card" data-open="' + esc(p.id) + '"><div class="img">' + im + '</div><div class="meta"><p class="t">' + esc(p.title) + '</p><span class="p">' + money(p.price) + '</span></div></button>';
+    }).join('');
+  }
+  $('grid').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-open]'); if (b) showProduct(b.getAttribute('data-open'));
+  });
+
+  /* ---------- sheet (modal) ---------- */
+  var sheet = $('sheet'), body = $('sheetBody'), actions = {}, submits = {};
+  function openSheet(html, big) { body.className = 'sheet-body' + (big ? ' big' : ''); body.innerHTML = html; sheet.hidden = false; body.scrollTop = 0; }
+  function closeSheet() { sheet.hidden = true; body.innerHTML = ''; }
+  sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); });
+  body.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-act]'); if (!t) return;
+    var fn = actions[t.getAttribute('data-act')]; if (fn) fn(t, e);
+  });
+  body.addEventListener('submit', function (e) {
+    var f = e.target.closest('[data-form]'); if (!f) return;
+    e.preventDefault(); var fn = submits[f.getAttribute('data-form')]; if (fn) fn(f);
+  });
+  actions.close = closeSheet;
+
+  /* ---------- product view ---------- */
+  var cur = null, gallerySel = 0;
+  function showProduct(id) {
+    cur = S.products.filter(function (p) { return p.id === id; })[0]; if (!cur) return;
+    gallerySel = 0; drawProduct();
+  }
+  function drawProduct() {
+    var p = cur, imgs = p.images || [];
+    var main = imgs.length ? '<img alt="" src="' + esc(imgs[gallerySel] || imgs[0]) + '">' : '<span class="muted">No image</span>';
+    var th = imgs.length > 1 ? '<div class="thumbs">' + imgs.map(function (u, i) { return '<img alt="" class="' + (i === gallerySel ? 'on' : '') + '" data-act="thumb" data-i="' + i + '" src="' + esc(u) + '">'; }).join('') + '</div>' : '';
+    openSheet(
+      '<div class="stack"><div class="row"><h2>' + esc(p.title) + '</h2><button class="btn sm" data-act="close" type="button">Close</button></div>' +
+      '<div class="gallery"><div class="main">' + main + '</div>' + th + '</div>' +
+      '<div class="price">' + money(p.price) + '</div>' +
+      '<div class="pre muted">' + esc(p.description || '') + '</div>' +
+      '<button class="btn primary wide" data-act="buy" type="button">Buy now ' + icon('arrow') + '</button></div>');
+  }
+  actions.thumb = function (t) { gallerySel = Number(t.getAttribute('data-i')) || 0; var keep = body.scrollTop; drawProduct(); body.scrollTop = keep; };
+
+  /* ---------- checkout: details -> payment -> WhatsApp ---------- */
+  var order = null;
+  actions.buy = function () { order = { id: orderId(), name: '', method: 'phone', code: '+91', value: '', utr: '' }; drawDetails(); };
+  function drawDetails() {
+    var phone = order.method === 'phone';
+    openSheet(
+      '<form data-form="details" class="stack"><div class="row"><h2>Your details</h2><span class="note">Step 1 of 2</span></div>' +
+      '<div class="box row"><span>' + esc(cur.title) + '</span><b>' + money(cur.price) + '</b></div>' +
+      '<div><label class="f">Full name *</label><input type="text" id="o-name" required placeholder="Enter your full name" value="' + esc(order.name) + '"></div>' +
+      '<div><label class="f">Contact method *</label><div class="seg"><button type="button" class="' + (phone ? 'on' : '') + '" data-act="m-phone">Phone</button><button type="button" class="' + (!phone ? 'on' : '') + '" data-act="m-email">Email</button></div></div>' +
+      (phone
+        ? '<div style="display:flex;gap:8px"><input type="text" id="o-code" style="width:84px" value="' + esc(order.code) + '" aria-label="Country code"><input type="tel" id="o-val" required placeholder="Mobile number" inputmode="numeric" value="' + esc(order.value) + '"></div>'
+        : '<input type="email" id="o-val" required placeholder="you@example.com" value="' + esc(order.value) + '">') +
+      '<button class="btn primary wide" type="submit">Continue to payment ' + icon('arrow') + '</button>' +
+      '<button class="btn wide" type="button" data-act="back-product">Back to product</button></form>');
+  }
+  function readDetails() {
+    order.name = ($('o-name') || {}).value || order.name;
+    if ($('o-val')) order.value = $('o-val').value.trim();
+    if ($('o-code')) order.code = $('o-code').value.trim() || '+91';
+  }
+  actions['m-phone'] = function () { readDetails(); order.method = 'phone'; order.value = ''; drawDetails(); };
+  actions['m-email'] = function () { readDetails(); order.method = 'email'; order.value = ''; drawDetails(); };
+  actions['back-product'] = function () { drawProduct(); };
+  submits.details = function () {
+    readDetails();
+    if (!order.name.trim()) { toast('Please enter your name'); return; }
+    if (order.method === 'phone' && order.value.replace(/\D/g, '').length < 6) { toast('Enter a valid phone number'); return; }
+    if (order.method === 'email' && !/^\S+@\S+\.\S+$/.test(order.value)) { toast('Enter a valid email'); return; }
+    drawPayment();
+  };
+  function upiLink() {
+    return 'upi://pay?pa=' + encodeURIComponent(S.merchantUpiId || '') + '&pn=' + encodeURIComponent(S.merchantName || '') +
+      '&am=' + encodeURIComponent(Number(cur.price) || 0) + '&cu=INR&tn=' + encodeURIComponent(order.id);
+  }
+
+  /* ---------- tiny QR code generator (byte mode, error correction M, versions 1-10) ---------- */
+  var QR = (function () {
+    var ECC = [0, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26], BLK = [0, 1, 1, 2, 2, 2, 4, 4, 4, 5, 5];
+    function rawModules(v) {
+      var r = (16 * v + 128) * v + 64;
+      if (v >= 2) { var n = Math.floor(v / 7) + 2; r -= (25 * n - 10) * n - 55; if (v >= 7) r -= 36; }
+      return r;
+    }
+    function dataCw(v) { return Math.floor(rawModules(v) / 8) - ECC[v] * BLK[v]; }
+    function mul(x, y) { var z = 0; for (var i = 7; i >= 0; i--) { z = (z << 1) ^ ((z >>> 7) * 0x11D); z ^= ((y >>> i) & 1) * x; } return z & 255; }
+    function divisor(d) {
+      var r = []; for (var i = 0; i < d; i++) r.push(0); r[d - 1] = 1; var root = 1;
+      for (i = 0; i < d; i++) { for (var j = 0; j < d; j++) { r[j] = mul(r[j], root); if (j + 1 < d) r[j] ^= r[j + 1]; } root = mul(root, 2); }
+      return r;
+    }
+    function remainder(data, div) {
+      var r = div.map(function () { return 0; });
+      data.forEach(function (b) { var f = b ^ r.shift(); r.push(0); div.forEach(function (c, i) { r[i] ^= mul(c, f); }); });
+      return r;
+    }
+    function bit(x, i) { return ((x >>> i) & 1) !== 0; }
+    function encode(text) {
+      var bytes = Array.prototype.slice.call(new TextEncoder().encode(text)), ver, bits = [];
+      for (ver = 1; ver <= 10; ver++) { if (4 + (ver < 10 ? 8 : 16) + bytes.length * 8 <= dataCw(ver) * 8) break; }
+      if (ver > 10) return null;
+      function put(val, n) { for (var i = n - 1; i >= 0; i--) bits.push((val >>> i) & 1); }
+      put(4, 4); put(bytes.length, ver < 10 ? 8 : 16); bytes.forEach(function (b) { put(b, 8); });
+      var cap = dataCw(ver) * 8; put(0, Math.min(4, cap - bits.length)); while (bits.length % 8) bits.push(0);
+      var data = []; for (var i = 0; i < bits.length; i += 8) { var v = 0; for (var k = 0; k < 8; k++) v = (v << 1) | bits[i + k]; data.push(v); }
+      for (var pad = 0xEC; data.length < dataCw(ver); pad ^= 0xEC ^ 0x11) data.push(pad);
+      var nb = BLK[ver], el = ECC[ver], raw = Math.floor(rawModules(ver) / 8), ns = nb - raw % nb, sl = Math.floor(raw / nb), div = divisor(el), blocks = [], pos = 0;
+      for (i = 0; i < nb; i++) {
+        var dl = sl - el + (i < ns ? 0 : 1), dat = data.slice(pos, pos + dl); pos += dl;
+        var ecc = remainder(dat, div); if (i < ns) dat.push(0); blocks.push(dat.concat(ecc));
+      }
+      var all = []; for (i = 0; i < blocks[0].length; i++) blocks.forEach(function (b, j) { if (i !== sl - el || j >= ns) all.push(b[i]); });
+      var size = ver * 4 + 17, m = [], fn = [];
+      for (i = 0; i < size; i++) { m.push(new Array(size).fill(false)); fn.push(new Array(size).fill(false)); }
+      function setF(x, y, d) { if (x >= 0 && x < size && y >= 0 && y < size) { m[y][x] = d; fn[y][x] = true; } }
+      for (i = 0; i < size; i++) { setF(6, i, i % 2 === 0); setF(i, 6, i % 2 === 0); }
+      function finder(cx, cy) { for (var dy = -4; dy <= 4; dy++) for (var dx = -4; dx <= 4; dx++) { var d = Math.max(Math.abs(dx), Math.abs(dy)); setF(cx + dx, cy + dy, d !== 2 && d !== 4); } }
+      finder(3, 3); finder(size - 4, 3); finder(3, size - 4);
+      var ap = []; if (ver > 1) { var na = Math.floor(ver / 7) + 2, step = Math.ceil((ver * 4 + 4) / (na * 2 - 2)) * 2; ap = [6]; for (var ps = size - 7; ap.length < na; ps -= step) ap.splice(1, 0, ps); }
+      ap.forEach(function (a, ia) { ap.forEach(function (b, ib) {
+        if ((ia === 0 && ib === 0) || (ia === 0 && ib === ap.length - 1) || (ia === ap.length - 1 && ib === 0)) return;
+        for (var dy = -2; dy <= 2; dy++) for (var dx = -2; dx <= 2; dx++) setF(a + dx, b + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+      }); });
+      function format(mask) {
+        var d = (0 << 3) | mask, r = d; for (var q = 0; q < 10; q++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+        var b = ((d << 10) | r) ^ 0x5412, t;
+        for (t = 0; t <= 5; t++) setF(8, t, bit(b, t)); setF(8, 7, bit(b, 6)); setF(8, 8, bit(b, 7)); setF(7, 8, bit(b, 8));
+        for (t = 9; t < 15; t++) setF(14 - t, 8, bit(b, t));
+        for (t = 0; t < 8; t++) setF(size - 1 - t, 8, bit(b, t));
+        for (t = 8; t < 15; t++) setF(8, size - 15 + t, bit(b, t));
+        setF(8, size - 8, true);
+      }
+      format(0);
+      if (ver >= 7) {
+        var rr = ver; for (i = 0; i < 12; i++) rr = (rr << 1) ^ ((rr >>> 11) * 0x1F25);
+        var vb = (ver << 12) | rr; for (i = 0; i < 18; i++) { var a = size - 11 + i % 3, b2 = Math.floor(i / 3); setF(a, b2, bit(vb, i)); setF(b2, a, bit(vb, i)); }
+      }
+      var idx = 0;
+      for (var right = size - 1; right >= 1; right -= 2) {
+        if (right === 6) right = 5;
+        for (var vert = 0; vert < size; vert++) for (var j = 0; j < 2; j++) {
+          var x = right - j, up = ((right + 1) & 2) === 0, y = up ? size - 1 - vert : vert;
+          if (!fn[y][x] && idx < all.length * 8) { m[y][x] = bit(all[idx >>> 3], 7 - (idx & 7)); idx++; }
         }
-      } catch (e) {}
-      return false;
-    }
-
-    /* Helper: Generate Order ID */
-    function generateOrderId() {
-      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-      let res = "ORD-";
-      for (let i = 0; i < 6; i++) {
-        res += chars.charAt(Math.floor(Math.random() * chars.length));
       }
-      return res;
-    }
-
-    /* 10 Built-in Color Themes (5 Dark + 5 Light) */
-    const THEMES = {
-      bw: {
-        name: "Monochrome B&W",
-        mode: "dark",
-        bg: "#000000",
-        surface: "#0a0a0a",
-        surfaceElevated: "#121212",
-        border: "#262626",
-        borderStrong: "#ffffff",
-        text: "#ffffff",
-        textMuted: "#a3a3a3",
-        accent: "#ffffff",
-        accentFg: "#000000",
-        accentGlow: "rgba(255,255,255,0.15)",
-        headerBg: "rgba(0,0,0,0.85)"
-      },
-      light_bw: {
-        name: "Monochrome Light",
-        mode: "light",
-        bg: "#ffffff",
-        surface: "#f8f9fa",
-        surfaceElevated: "#f1f3f5",
-        border: "#e5e7eb",
-        borderStrong: "#000000",
-        text: "#000000",
-        textMuted: "#6b7280",
-        accent: "#000000",
-        accentFg: "#ffffff",
-        accentGlow: "rgba(0,0,0,0.1)",
-        headerBg: "rgba(255,255,255,0.9)"
-      },
-      light_ivory: {
-        name: "Warm Ivory",
-        mode: "light",
-        bg: "#faf8f5",
-        surface: "#f4f0eb",
-        surfaceElevated: "#ede7e0",
-        border: "#e2dad1",
-        borderStrong: "#2c2825",
-        text: "#2c2825",
-        textMuted: "#78716c",
-        accent: "#2c2825",
-        accentFg: "#faf8f5",
-        accentGlow: "rgba(44,40,37,0.1)",
-        headerBg: "rgba(250,248,245,0.9)"
-      },
-      light_slate: {
-        name: "Frosted Slate",
-        mode: "light",
-        bg: "#f0f4f8",
-        surface: "#e2e8f0",
-        surfaceElevated: "#cbd5e1",
-        border: "#cbd5e1",
-        borderStrong: "#0f172a",
-        text: "#0f172a",
-        textMuted: "#64748b",
-        accent: "#0f172a",
-        accentFg: "#ffffff",
-        accentGlow: "rgba(15,23,42,0.1)",
-        headerBg: "rgba(240,244,248,0.9)"
-      },
-      light_mint: {
-        name: "Mint Daylight",
-        mode: "light",
-        bg: "#f0fdf4",
-        surface: "#dcfce7",
-        surfaceElevated: "#bbf7d0",
-        border: "#bbf7d0",
-        borderStrong: "#065f46",
-        text: "#064e3b",
-        textMuted: "#047857",
-        accent: "#059669",
-        accentFg: "#ffffff",
-        accentGlow: "rgba(5,150,105,0.15)",
-        headerBg: "rgba(240,253,244,0.9)"
-      },
-      light_rose: {
-        name: "Rose Quartz",
-        mode: "light",
-        bg: "#fff1f2",
-        surface: "#ffe4e6",
-        surfaceElevated: "#fecdd3",
-        border: "#fecdd3",
-        borderStrong: "#9f1239",
-        text: "#881337",
-        textMuted: "#9f1239",
-        accent: "#e11d48",
-        accentFg: "#ffffff",
-        accentGlow: "rgba(225,29,72,0.15)",
-        headerBg: "rgba(255,241,242,0.9)"
-      },
-      chrome: {
-        name: "Liquid Chrome",
-        mode: "dark",
-        bg: "#09090b",
-        surface: "#18181b",
-        surfaceElevated: "#27272a",
-        border: "#3f3f46",
-        borderStrong: "#e4e4e7",
-        text: "#f4f4f5",
-        textMuted: "#a1a1aa",
-        accent: "#e4e4e7",
-        accentFg: "#09090b",
-        accentGlow: "rgba(228,228,231,0.2)",
-        headerBg: "rgba(9,9,11,0.85)"
-      },
-      emerald: {
-        name: "Emerald Cyber",
-        mode: "dark",
-        bg: "#022c22",
-        surface: "#064e3b",
-        surfaceElevated: "#047857",
-        border: "#065f46",
-        borderStrong: "#34d399",
-        text: "#ecfdf5",
-        textMuted: "#6ee7b7",
-        accent: "#10b981",
-        accentFg: "#022c22",
-        accentGlow: "rgba(16,185,129,0.3)",
-        headerBg: "rgba(2,44,34,0.85)"
-      },
-      violet: {
-        name: "Royal Violet",
-        mode: "dark",
-        bg: "#0f0728",
-        surface: "#1e1b4b",
-        surfaceElevated: "#312e81",
-        border: "#3730a3",
-        borderStrong: "#818cf8",
-        text: "#e0e7ff",
-        textMuted: "#a5b4fc",
-        accent: "#6366f1",
-        accentFg: "#ffffff",
-        accentGlow: "rgba(99,102,241,0.3)",
-        headerBg: "rgba(15,7,40,0.85)"
-      },
-      crimson: {
-        name: "Crimson Noir",
-        mode: "dark",
-        bg: "#180808",
-        surface: "#2b0f0f",
-        surfaceElevated: "#421515",
-        border: "#5c1d1d",
-        borderStrong: "#f87171",
-        text: "#fee2e2",
-        textMuted: "#fca5a5",
-        accent: "#ef4444",
-        accentFg: "#ffffff",
-        accentGlow: "rgba(239,68,68,0.3)",
-        headerBg: "rgba(24,8,8,0.85)"
+      function maskFn(k, x, y) {
+        switch (k) { case 0: return (x + y) % 2 === 0; case 1: return y % 2 === 0; case 2: return x % 3 === 0; case 3: return (x + y) % 3 === 0;
+          case 4: return (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0; case 5: return x * y % 2 + x * y % 3 === 0;
+          case 6: return (x * y % 2 + x * y % 3) % 2 === 0; default: return ((x + y) % 2 + x * y % 3) % 2 === 0; }
       }
-    };
-
-    /* Master Store State (Starts Empty so Default Sample Products Never Overwrite Your Store) */
-    let storeState = {
-      theme: "bw",
-      brandName: "MONO.STORE",
-      brandLogo: "",
-      logoConfig: { size: 36, zoom: 100, radius: 8, fit: "cover" },
-      merchantUpiId: "hanimohd@fam",
-      merchantName: "Hani Muhammed",
-      whatsappNumber: "918095858881",
-      apiEndpoint: "",
-      customerOrders: [],
-      products: []
-    };
-
-    let selectedProduct = null;
-    let currentOrderId = generateOrderId();
-    let currentCustomerInfo = {
-      name: "",
-      contactMethod: "phone",
-      contactValue: ""
-    };
-    let isProcessingOcr = false;
-    let ocrExtractedData = { utr: null, txnId: null, amount: null };
-    let currentEditingMediaList = [];
-
-    /* Helper: Detect if URL/DataURI is a Video */
-    function isVideoSource(url) {
-      if (!url) return false;
-      return /^data:video\//i.test(url) || /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
-    }
-
-    /* Helper: Normalize Product Media List */
-    function getProductMediaList(prod) {
-      if (Array.isArray(prod.media) && prod.media.length > 0) {
-        return prod.media;
+      function applyMask(k) { for (var y = 0; y < size; y++) for (var x = 0; x < size; x++) if (!fn[y][x] && maskFn(k, x, y)) m[y][x] = !m[y][x]; }
+      function penalty() {
+        var p = 0, y, x, run, dark = 0;
+        for (y = 0; y < size; y++) { run = 1; for (x = 1; x < size; x++) { if (m[y][x] === m[y][x - 1]) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; } }
+        for (x = 0; x < size; x++) { run = 1; for (y = 1; y < size; y++) { if (m[y][x] === m[y - 1][x]) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; } }
+        for (y = 0; y < size - 1; y++) for (x = 0; x < size - 1; x++) if (m[y][x] === m[y][x + 1] && m[y][x] === m[y + 1][x] && m[y][x] === m[y + 1][x + 1]) p += 3;
+        for (y = 0; y < size; y++) for (x = 0; x < size; x++) if (m[y][x]) dark++;
+        p += Math.floor(Math.abs(dark * 20 - size * size * 10) / (size * size)) * 10;
+        return p;
       }
-      if (prod.badge && prod.badge.trim().startsWith('[')) {
-        try {
-          const parsed = JSON.parse(prod.badge);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        } catch (e) {}
-      }
-      if (prod.image) {
-        return [{ type: isVideoSource(prod.image) ? 'video' : 'image', url: prod.image }];
-      }
-      return [];
+      var best = 0, bp = Infinity;
+      for (var k = 0; k < 8; k++) { applyMask(k); format(k); var pe = penalty(); if (pe < bp) { bp = pe; best = k; } applyMask(k); }
+      applyMask(best); format(best);
+      return m;
     }
+    return { svg: function (text) {
+      var m = encode(text); if (!m) return '';
+      var n = m.length, q = 4, d = '';
+      for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) if (m[y][x]) d += 'M' + (x + q) + ',' + (y + q) + 'h1v1h-1z';
+      return '<svg viewBox="0 0 ' + (n + 2 * q) + ' ' + (n + 2 * q) + '" shape-rendering="crispEdges" role="img" aria-label="UPI payment QR code"><rect width="100%" height="100%" fill="#fff"/><path d="' + d + '" fill="#000"/></svg>';
+    } };
+  })();
 
-    /* Toast Notification */
-    function showToast(message, type = 'info') {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
-      let bg = 'theme-surface-elevated border theme-border theme-text';
-      if (type === 'success') bg = 'bg-emerald-500 text-black font-bold';
-      if (type === 'error') bg = 'bg-red-500 text-white font-bold';
+  function drawPayment() {
+    openSheet(
+      '<form data-form="pay" class="stack"><div class="row"><h2>Payment</h2><span class="note">Step 2 of 2</span></div>' +
+      '<div class="box"><div class="kv"><span class="muted">Order</span><b>' + esc(order.id) + '</b></div>' +
+      '<div class="kv"><span class="muted">Product</span><b>' + esc(cur.title) + '</b></div>' +
+      '<div class="kv"><span class="muted">Amount</span><b>' + money(cur.price) + '</b></div>' +
+      '<div class="kv"><span class="muted">Pay to</span><b>' + esc(S.merchantName) + '</b></div>' +
+      '<div class="kv"><span class="muted">UPI ID</span><b>' + esc(S.merchantUpiId) + '</b></div></div>' +
+      (function () { var q = QR.svg(upiLink()); return q ? '<div class="qr">' + q + '</div><p class="note" style="margin:0;text-align:center">Scan with any UPI app to pay ' + money(cur.price) + '</p>' : ''; })() +
+      '<div style="display:flex;gap:8px"><button class="btn" style="flex:1" type="button" data-act="copy-upi">' + icon('copy') + 'Copy UPI ID</button><a class="btn primary" style="flex:1" href="' + esc(upiLink()) + '">Open UPI app</a></div>' +
+      '<p class="note" style="margin:0">After paying, send your details on WhatsApp. Add the 12-digit UTR if you have it.</p>' +
+      '<div><label class="f">UTR / Transaction ID (optional)</label><input type="text" id="o-utr" inputmode="numeric" maxlength="12" placeholder="12-digit UTR" value="' + esc(order.utr) + '"></div>' +
+      '<button class="btn primary wide" type="submit">' + icon('send') + 'Send details to WhatsApp</button>' +
+      '<button class="btn wide" type="button" data-act="back-details">Back</button></form>');
+  }
+  actions['back-details'] = function () { drawDetails(); };
+  actions['copy-upi'] = function () {
+    var v = S.merchantUpiId || '';
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(v).then(function () { toast('UPI ID copied'); }, function () { toast(v); });
+    else toast(v);
+  };
+  submits.pay = function () {
+    order.utr = ($('o-utr') || {}).value || '';
+    var lines = ['New order', 'Order ID: ' + order.id, 'Product: ' + cur.title, 'Price: ' + money(cur.price), 'Name: ' + order.name,
+      'Contact: ' + (order.method === 'phone' ? order.code + ' ' + order.value : order.value)];
+    if (order.utr.trim()) lines.push('UTR: ' + order.utr.trim());
+    var num = String(S.whatsappNumber || '').replace(/\D/g, '');
+    window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+  };
 
-      toast.className = `px-4 py-3 rounded-xl shadow-2xl font-mono text-xs flex items-center gap-3 pointer-events-auto transition-all animate-fade-in ${bg}`;
-      toast.innerHTML = `<span>${message}</span>`;
-      container.appendChild(toast);
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-      }, 3500);
-    }
+  /* ---------- admin ---------- */
+  function openPin() {
+    openSheet('<form data-form="pin" class="stack"><h2>Admin access</h2><input type="password" id="pin" inputmode="numeric" autocomplete="off" placeholder="Enter PIN">' +
+      '<button class="btn primary wide" type="submit">Unlock</button><button class="btn wide" type="button" data-act="close">Cancel</button></form>');
+    setTimeout(function () { var p = $('pin'); if (p) p.focus(); }, 50);
+  }
+  /* Hidden entry: tap the logo (or the footer text) 5 times quickly, or open the link with #admin */
+  var taps = 0, tapTimer;
+  function secretTap() {
+    taps++; clearTimeout(tapTimer); tapTimer = setTimeout(function () { taps = 0; }, 2500);
+    if (taps >= 5) { taps = 0; openPin(); }
+  }
+  $('logo').addEventListener('click', secretTap);
+  $('footText').addEventListener('click', secretTap);
+  submits.pin = function () {
+    if (($('pin').value || '').trim() === String(S.adminPin || '2689')) { drawAdmin(); }
+    else { toast('Incorrect PIN'); $('pin').value = ''; }
+  };
 
-    /* Boot Loader Controls */
-    function updateBootLoader(percent, text) {
-      const bar = document.getElementById('boot-progress-bar');
-      const txt = document.getElementById('boot-status-text');
-      if (bar) bar.style.width = `${percent}%`;
-      if (txt && text) txt.textContent = text;
-    }
-
-    function hideBootLoader() {
-      const loader = document.getElementById('db-boot-loader');
-      if (loader) {
-        loader.style.opacity = '0';
-        setTimeout(() => loader.remove(), 350);
-      }
-    }
-
-    /* =========================================================================
-       NEON POSTGRESQL LIVE CONNECTION ENGINE (WEBSOCKET POOL + FALLBACK)
-       ========================================================================= */
-    async function sb(method, table, { query = '', body = null, prefer = '' } = {}) {
-      try {
-        const headers = {
-          apikey: SUPABASE_KEY,
-          Authorization: 'Bearer ' + SUPABASE_KEY,
-          'Content-Type': 'application/json'
+  var formImgs = [], editingId = null;
+  function drawAdmin() {
+    var list = S.products.map(function (p) {
+      var th = (p.images && p.images[0]) ? '<img alt="" src="' + esc(p.images[0]) + '">' : '<span class="ph"></span>';
+      return '<div class="item">' + th + '<div class="grow"><b>' + esc(p.title) + '</b><span class="note">' + money(p.price) + '</span></div>' +
+        '<button class="btn sm" type="button" data-act="edit" data-id="' + esc(p.id) + '">Edit</button>' +
+        '<button class="btn sm danger" type="button" data-act="del" data-id="' + esc(p.id) + '">Delete</button></div>';
+    }).join('') || '<p class="note">No products yet.</p>';
+    openSheet(
+      '<div class="pubbar stack"><div class="row"><h2>Admin panel</h2><button class="btn sm" type="button" data-act="close">Close</button></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary sm" type="button" data-act="dl">' + icon('download') + 'Download HTML</button><button class="btn sm" type="button" data-act="cp">' + icon('copy') + 'Copy HTML</button>' + (hasDraft ? '<button class="btn sm danger" type="button" data-act="discard">Discard changes</button>' : '') + '</div>' +
+      '<p class="note" style="margin:0">' + (hasDraft ? 'You have changes saved only in this browser. Download the HTML and upload it to GitHub as index.html to publish.' : 'No unpublished changes.') + '</p></div>' +
+      '<form data-form="settings" class="stack"><h3>Store settings</h3>' +
+      '<div><label class="f">Brand name</label><input type="text" id="s-brand" value="' + esc(S.brandName) + '"></div>' +
+      '<div><label class="f">Logo (link or upload)</label><input type="url" id="s-logo" placeholder="https://..." value="' + esc(String(S.brandLogo || '').indexOf('data:') === 0 ? '' : S.brandLogo) + '"><div style="margin-top:6px"><input type="file" id="s-logofile" accept="image/*"></div>' + (String(S.brandLogo || '').indexOf('data:') === 0 ? '<p class="note">An uploaded logo is in use. Pick a new file or paste a link to replace it.</p>' : '') + '</div>' +
+      '<div><label class="f">Theme</label><select id="s-theme"><option value="light"' + (S.theme !== 'dark' ? ' selected' : '') + '>Light</option><option value="dark"' + (S.theme === 'dark' ? ' selected' : '') + '>Dark</option></select></div>' +
+      '<div><label class="f">UPI ID</label><input type="text" id="s-upi" value="' + esc(S.merchantUpiId) + '"></div>' +
+      '<div><label class="f">Merchant name</label><input type="text" id="s-mname" value="' + esc(S.merchantName) + '"></div>' +
+      '<div><label class="f">WhatsApp number (with country code)</label><input type="tel" id="s-wa" value="' + esc(S.whatsappNumber) + '"></div>' +
+      '<div><label class="f">Admin PIN</label><input type="text" id="s-pin" inputmode="numeric" value="' + esc(S.adminPin || '2689') + '"></div>' +
+      '<button class="btn primary wide" type="submit">Save settings</button></form>' +
+      '<h3>Products</h3><div class="plist stack">' + list + '</div>' +
+      '<form data-form="product" class="stack" id="pform"><h3>' + (editingId ? 'Edit product' : 'Add product') + '</h3>' +
+      '<div><label class="f">Title *</label><input type="text" id="p-title" required></div>' +
+      '<div><label class="f">Price (\u20B9) *</label><input type="number" id="p-price" required min="0" step="any" inputmode="decimal"></div>' +
+      '<div><label class="f">Description</label><textarea id="p-desc"></textarea></div>' +
+      '<div><label class="f">Images</label><div class="imgs" id="p-imgs"></div>' +
+      '<div style="display:flex;gap:8px;margin-top:8px"><input type="url" id="p-url" placeholder="Paste image link"><button class="btn" type="button" data-act="addurl">' + icon('plus') + 'Add</button></div>' +
+      '<div style="margin-top:8px"><input type="file" id="p-file" accept="image/*" multiple></div></div>' +
+      '<button class="btn primary wide" type="submit">' + (editingId ? 'Save product' : 'Add product') + '</button>' +
+      (editingId ? '<button class="btn wide" type="button" data-act="cancel-edit">Cancel edit</button>' : '') + '</form>', true);
+    fillProductForm();
+    var pf = $('p-file'); if (pf) pf.addEventListener('change', onProductFiles);
+    var lf = $('s-logofile'); if (lf) lf.addEventListener('change', onLogoFile);
+  }
+  function fillProductForm() {
+    var p = editingId ? S.products.filter(function (x) { return x.id === editingId; })[0] : null;
+    if (p && !fillProductForm.done) { $('p-title').value = p.title || ''; $('p-price').value = p.price; $('p-desc').value = p.description || ''; formImgs = (p.images || []).slice(); }
+    drawFormImgs();
+  }
+  function drawFormImgs() {
+    var box = $('p-imgs'); if (!box) return;
+    box.innerHTML = formImgs.map(function (u, i) { return '<div class="im"><img alt="" src="' + esc(u) + '"><button type="button" class="x" data-act="rmimg" data-i="' + i + '" aria-label="Remove">\u00D7</button></div>'; }).join('') || '<span class="note">No images yet.</span>';
+  }
+  function toDataUrl(file, max, type) {
+    return new Promise(function (res, rej) {
+      var fr = new FileReader();
+      fr.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+          var k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          res(c.toDataURL(type, 0.82));
         };
-        if (prefer) headers.Prefer = prefer;
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 6000);
-        const resp = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query ? '?' + query : ''}`, {
-          method, headers, body: body ? JSON.stringify(body) : undefined, signal: ctrl.signal
-        });
-        clearTimeout(t);
-        if (!resp.ok) {
-          lastDbError = `${table}: ${resp.status} ${(await resp.text()).slice(0, 160)}`;
-          return { rows: [], ok: false };
-        }
-        const txt = await resp.text();
-        isRealNeonConnected = true;
-        return { rows: txt ? JSON.parse(txt) : [], ok: true };
-      } catch (e) {
-        lastDbError = `${table}: ${e && e.message || e}`;
-        return { rows: [], ok: false };
-      }
-    }
-    const sbSelect = (table, query = '') => sb('GET', table, { query: 'select=*' + (query ? '&' + query : '') });
-    const sbUpsert = (table, row, conflict) => sb('POST', table, { query: 'on_conflict=' + conflict, body: row, prefer: 'resolution=merge-duplicates,return=minimal' });
-    const sbDelete = (table, query) => sb('DELETE', table, { query });
-    const sbUpdate = (table, query, row) => sb('PATCH', table, { query, body: row, prefer: 'return=minimal' });
-
-    let dbUnreachable = false;
-    let lastDbError = '';
-    function showDbBanner(show) {
-      let el = document.getElementById('db-offline-banner');
-      if (!show) { if (el) el.remove(); return; }
-      if (!el) {
-        el = document.createElement('div');
-        el.id = 'db-offline-banner';
-        el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:9000;background:#111;color:#fff;border:1px solid #444;border-radius:14px;padding:12px 14px;font:13px/1.4 monospace;display:flex;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 8px 30px rgba(0,0,0,.35)';
-        el.innerHTML = '<span>Can\'t reach the store database. Products may be missing or out of date.<br><small id="db-err-detail" style="opacity:.7;word-break:break-all"></small></span><button id="db-retry-btn" style="background:#fff;color:#000;border-radius:10px;padding:8px 12px;font-weight:700;white-space:nowrap">Retry</button>';
-        document.body.appendChild(el);
-        document.getElementById('db-err-detail').textContent = (lastDbError || 'no details').slice(0, 300);
-        document.getElementById('db-retry-btn').onclick = async () => {
-          const b = document.getElementById('db-retry-btn'); b.textContent = '...';
-          await initAndSyncNeonDatabase();
-        };
-      }
-    }
-
-    async function initAndSyncNeonDatabase() {
-      loadLocalBackupState();
-      applyTheme(storeState.theme, false);
-
-      try {
-        updateBootLoader(35, "Loading Store...");
-        updateBootLoader(65, "Loading Store...");
-
-        let settingsRes, prodRes;
-        for (let attempt = 0; attempt < 2; attempt++) {
-          [settingsRes, prodRes] = await Promise.all([
-            sbSelect('store_settings', 'id=eq.1&limit=1'),
-            sbSelect('store_products', 'order=sort_order.asc')
-          ]);
-          if (prodRes.ok || settingsRes.ok) break;
-          updateBootLoader(65, "Retrying connection...");
-          await new Promise(r => setTimeout(r, 1200));
-        }
-        dbUnreachable = !(prodRes.ok || settingsRes.ok);
-
-        if (!prodRes.ok || !prodRes.rows || prodRes.rows.length === 0) {
-          const fallbackProdRes = await sbSelect('store_products');
-          if (fallbackProdRes.ok && fallbackProdRes.rows && fallbackProdRes.rows.length > 0) {
-            prodRes = fallbackProdRes;
-          }
-        }
-
-        updateBootLoader(90, "Loading Store...");
-
-        if (settingsRes.ok && settingsRes.rows && settingsRes.rows.length > 0) {
-          const s = settingsRes.rows[0];
-          storeState.theme = s.theme || storeState.theme || 'bw';
-          storeState.brandName = s.brand_name || storeState.brandName || 'MONO.STORE';
-          storeState.brandLogo = s.brand_logo !== undefined ? s.brand_logo : storeState.brandLogo;
-          try {
-            if (s.logo_config) storeState.logoConfig = JSON.parse(s.logo_config);
-          } catch(e){}
-          storeState.merchantUpiId = s.merchant_upi_id || storeState.merchantUpiId || 'hanimohd@fam';
-          storeState.merchantName = s.merchant_name || storeState.merchantName || 'Hani Muhammed';
-          storeState.whatsappNumber = s.whatsapp_number || storeState.whatsappNumber || '918095858881';
-          storeState.apiEndpoint = s.api_endpoint !== undefined ? s.api_endpoint : storeState.apiEndpoint;
-        }
-
-        if (prodRes.ok && prodRes.rows && prodRes.rows.length > 0) {
-          // Always remove the 3 dummy sample IDs (p1, p2, p3) if present
-          const customRows = prodRes.rows.filter(r => !['p1', 'p2', 'p3'].includes(String(r.id)));
-          const rowsToUse = customRows;
-
-          if (customRows.length !== prodRes.rows.length) {
-            sbDelete('store_products', 'id=in.(p1,p2,p3)');
-          }
-
-          storeState.products = rowsToUse.map(p => {
-            let parsedMedia = [];
-            if (p.badge && String(p.badge).trim().startsWith('[')) {
-              try { parsedMedia = JSON.parse(p.badge); } catch (e) {}
-            }
-            if (!Array.isArray(parsedMedia) || parsedMedia.length === 0) {
-              parsedMedia = p.image ? [{ type: isVideoSource(p.image) ? 'video' : 'image', url: p.image }] : [];
-            }
-            const showNameInGallery = p.show_price !== false;
-            return {
-              id: p.id,
-              title: p.title || "",
-              price: Number(p.price),
-              showName: showNameInGallery,
-              badge: p.badge || "",
-              image: parsedMedia[0] ? parsedMedia[0].url : (p.image || ""),
-              media: parsedMedia,
-              description: p.description || "",
-              downloadUrl: p.download_url || ""
-            };
-          });
-          saveLocalBackupState();
-        } else if (!dbUnreachable) {
-          // Database reachable but empty: drop the built-in sample products, push only real local ones
-          storeState.products = (storeState.products || []).filter(pr => !['p1', 'p2', 'p3'].includes(String(pr.id)));
-          for (let i = 0; i < storeState.products.length; i++) {
-            upsertProductToNeon(storeState.products[i], i);
-          }
-        }
-
-        applyTheme(storeState.theme, false);
-        renderStorefront();
-        updateBootLoader(100, "Ready");
-        hideBootLoader();
-        showDbBanner(dbUnreachable);
-      } catch (err) {
-        dbUnreachable = true;
-        showDbBanner(true);
-        try { applyTheme(storeState.theme, false); renderStorefront(); } catch (e2) {}
-        updateBootLoader(100, "Ready");
-        hideBootLoader();
-      }
-    }
-
-    /* Save or Update Customer Order Submission in Neon + Local Backup */
-    async function saveCustomerOrderSubmission(utrValue = "", orderStatus = "details_entered") {
-      if (!selectedProduct) return;
-
-      const record = {
-        order_id: currentOrderId,
-        customer_name: currentCustomerInfo.name || "Anonymous",
-        contact_method: currentCustomerInfo.contactMethod || "phone",
-        contact_value: currentCustomerInfo.contactValue || "",
-        product_id: selectedProduct.id,
-        product_title: selectedProduct.title || "Digital Product",
-        product_price: Number(selectedProduct.price) || 0,
-        utr: utrValue || "",
-        status: orderStatus,
-        created_at: new Date().toISOString()
+        img.onerror = rej; img.src = fr.result;
       };
-
-      if (!Array.isArray(storeState.customerOrders)) {
-        storeState.customerOrders = [];
-      }
-      const existingIdx = storeState.customerOrders.findIndex(o => o.order_id === currentOrderId);
-      if (existingIdx >= 0) {
-        storeState.customerOrders[existingIdx] = {
-          ...storeState.customerOrders[existingIdx],
-          ...record,
-          utr: utrValue || storeState.customerOrders[existingIdx].utr
-        };
-      } else {
-        storeState.customerOrders.unshift(record);
-      }
-      saveLocalBackupState();
-
-      try {
-        await sbUpsert('customer_orders', {
-          order_id: record.order_id,
-          customer_name: record.customer_name,
-          contact_method: record.contact_method,
-          contact_value: record.contact_value,
-          product_id: record.product_id,
-          product_title: record.product_title,
-          product_price: record.product_price,
-          utr: record.utr,
-          status: record.status
-        }, 'order_id');
-      } catch (e) {}
-    }
-
-    async function upsertProductToNeon(prod, orderIdx = Date.now()) {
-      saveLocalBackupState();
-      try {
-        const mediaList = getProductMediaList(prod);
-        const primaryUrl = mediaList[0] ? mediaList[0].url : (prod.image || "");
-        const serializedMedia = JSON.stringify(mediaList);
-        const showNameFlag = prod.showName !== false;
-
-        const res = await sbUpsert('store_products', {
-          id: prod.id,
-          title: prod.title || "",
-          price: Number(prod.price) || 0,
-          show_price: showNameFlag,
-          badge: serializedMedia,
-          image: primaryUrl,
-          description: prod.description || "",
-          download_url: prod.downloadUrl || "",
-          sort_order: orderIdx
-        }, 'id');
-        if (!res.ok) return false;
-        return true;
-      } catch (err) {
-        return false;
-      }
-    }
-
-    async function deleteProductFromNeon(productId) {
-      saveLocalBackupState();
-      try {
-        await sbDelete('store_products', 'id=eq.' + encodeURIComponent(productId));
-      } catch (e) {}
-    }
-
-    async function pushSettingsToNeon() {
-      saveLocalBackupState();
-      try {
-        await sbUpsert('store_settings', {
-          id: 1,
-          theme: storeState.theme,
-          brand_name: storeState.brandName,
-          brand_logo: storeState.brandLogo,
-          logo_config: JSON.stringify(storeState.logoConfig),
-          merchant_upi_id: storeState.merchantUpiId,
-          merchant_name: storeState.merchantName,
-          whatsapp_number: storeState.whatsappNumber,
-          updated_at: new Date().toISOString()
-        }, 'id');
-      } catch (e) {}
-    }
-
-    async function forcePullFromNeon() {
-      showToast("Syncing with Supabase...", "info");
-      await initAndSyncNeonDatabase();
-      renderAdminProductsList();
-      renderAdminCustomerOrders();
-      renderAdminUtrList();
-      showToast("Database sync completed!", "success");
-    }
-
-    /* =========================================================================
-       THEME ENGINE
-       ========================================================================= */
-    function applyTheme(themeKey, saveToDb = true) {
-      const theme = THEMES[themeKey] || THEMES.bw;
-      storeState.theme = themeKey;
-
-      const root = document.documentElement;
-      if (theme.mode === 'light') {
-        root.classList.add('light-mode');
-        root.classList.remove('dark');
-      } else {
-        root.classList.remove('light-mode');
-        root.classList.add('dark');
-      }
-
-      root.style.setProperty('--bg', theme.bg);
-      root.style.setProperty('--surface', theme.surface);
-      root.style.setProperty('--surface-elevated', theme.surfaceElevated);
-      root.style.setProperty('--border', theme.border);
-      root.style.setProperty('--border-strong', theme.borderStrong);
-      root.style.setProperty('--text', theme.text);
-      root.style.setProperty('--text-muted', theme.textMuted);
-      root.style.setProperty('--accent', theme.accent);
-      root.style.setProperty('--accent-fg', theme.accentFg);
-      root.style.setProperty('--accent-glow', theme.accentGlow);
-      root.style.setProperty('--header-bg', theme.headerBg);
-
-      if (saveToDb) {
-        pushSettingsToNeon();
-        showToast(`Theme switched to ${theme.name}`, "info");
-      }
-    }
-
-    /* =========================================================================
-       LOGO RENDER & ADJUSTER
-       ========================================================================= */
-    function renderBrandLogo() {
-      const box = document.getElementById('brand-logo-box');
-      const fallback = document.getElementById('brand-logo-fallback');
-      const img = document.getElementById('brand-logo-img');
-      const cfg = storeState.logoConfig || { size: 36, zoom: 100, radius: 8, fit: 'cover' };
-
-      if (box) {
-        box.style.width = `${cfg.size}px`;
-        box.style.height = `${cfg.size}px`;
-        box.style.borderRadius = `${cfg.radius}px`;
-      }
-
-      if (storeState.brandLogo && storeState.brandLogo.trim() !== '') {
-        if (fallback) fallback.classList.add('hidden');
-        if (img) {
-          img.src = storeState.brandLogo;
-          img.style.transform = `scale(${cfg.zoom / 100})`;
-          img.style.objectFit = cfg.fit || 'cover';
-          img.classList.remove('hidden');
-        }
-      } else {
-        if (fallback) fallback.classList.remove('hidden');
-        if (img) img.classList.add('hidden');
-      }
-    }
-
-    function updateLogoAdjusterPreview() {
-      const url = document.getElementById('cfg-logo-url').value.trim();
-      const size = document.getElementById('cfg-logo-size').value;
-      const zoom = document.getElementById('cfg-logo-zoom').value;
-      const radius = document.getElementById('cfg-logo-radius').value;
-      const fit = document.getElementById('cfg-logo-fit').value;
-
-      document.getElementById('lbl-logo-size').textContent = `${size}px`;
-      document.getElementById('lbl-logo-zoom').textContent = `${zoom}%`;
-      document.getElementById('lbl-logo-radius').textContent = `${radius}px`;
-
-      const box = document.getElementById('admin-logo-preview-box');
-      const fallback = document.getElementById('admin-logo-preview-fallback');
-      const img = document.getElementById('admin-logo-preview-img');
-      const brand = document.getElementById('admin-logo-preview-brand');
-
-      if (box) {
-        box.style.width = `${size}px`;
-        box.style.height = `${size}px`;
-        box.style.borderRadius = `${radius}px`;
-      }
-      if (brand) brand.textContent = document.getElementById('cfg-brand-name').value || "MONO.STORE";
-
-      if (url) {
-        if (fallback) fallback.classList.add('hidden');
-        if (img) {
-          img.src = url;
-          img.style.transform = `scale(${zoom / 100})`;
-          img.style.objectFit = fit;
-          img.classList.remove('hidden');
-        }
-      } else {
-        if (fallback) fallback.classList.remove('hidden');
-        if (img) img.classList.add('hidden');
-      }
-    }
-
-    function clearBrandLogo() {
-      document.getElementById('cfg-logo-url').value = '';
-      document.getElementById('cfg-logo-size').value = 36;
-      document.getElementById('cfg-logo-zoom').value = 100;
-      document.getElementById('cfg-logo-radius').value = 8;
-      document.getElementById('cfg-logo-fit').value = 'cover';
-      updateLogoAdjusterPreview();
-    }
-
-    function handleAdminLogoUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        document.getElementById('cfg-logo-url').value = evt.target.result;
-        updateLogoAdjusterPreview();
-        showToast("Logo image loaded!", "success");
-      };
-      reader.readAsDataURL(file);
-    }
-
-    /* =========================================================================
-       UNIFIED PRODUCT MULTI-MEDIA MANAGER (PHOTOS, VIDEOS & OVERLAY ORDER)
-       ========================================================================= */
-    function renderAdminMediaTray() {
-      const tray = document.getElementById('admin-media-tray');
-      if (!tray) return;
-      tray.innerHTML = '';
-
-      if (currentEditingMediaList.length === 0) {
-        tray.innerHTML = `<div class="col-span-full text-xs font-mono theme-text-muted p-3 rounded-xl border border-dashed theme-border text-center">No photos or videos added yet. Upload or paste a link above.</div>`;
-        return;
-      }
-
-      currentEditingMediaList.forEach((item, idx) => {
-        const card = document.createElement('div');
-        card.className = "relative rounded-xl overflow-hidden border theme-border bg-zinc-950 group";
-
-        const mediaPreview = item.type === 'video'
-          ? `<video src="${item.url}" class="w-full h-24 object-cover" muted playsinline></video>
-             <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/80 text-white font-mono text-[9px]">VIDEO</span>`
-          : `<img src="${item.url}" class="w-full h-24 object-cover" onerror="this.src='https://placehold.co/300x200/111/fff?text=IMAGE'" />
-             <span class="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/80 text-white font-mono text-[9px]">${idx === 0 ? 'COVER #1' : '#' + (idx + 1)}</span>`;
-
-        card.innerHTML = `
-          ${mediaPreview}
-          <div class="p-1.5 flex items-center justify-between gap-1 bg-black/90 border-t border-zinc-800">
-            <div class="flex items-center gap-1">
-              <button type="button" onclick="moveMediaItemInForm(${idx}, -1)" class="px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-white text-[10px] font-mono" title="Move Left">◀</button>
-              <button type="button" onclick="moveMediaItemInForm(${idx}, 1)" class="px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-white text-[10px] font-mono" title="Move Right">▶</button>
-            </div>
-            <button type="button" onclick="removeMediaItemFromForm(${idx})" class="px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white text-[10px] font-mono">
-              Delete
-            </button>
-          </div>
-        `;
-        tray.appendChild(card);
-      });
-    }
-
-    function handleAdminMediaUpload(e) {
-      const files = Array.from(e.target.files || []);
-      if (!files.length) return;
-
-      files.forEach(file => {
-        const isVid = file.type.startsWith('video/');
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          if (isVid) {
-            currentEditingMediaList.push({ type: 'video', url: evt.target.result });
-            renderAdminMediaTray();
-            showToast("Video added to product gallery!", "success");
-          } else {
-            const img = new Image();
-            img.onload = function() {
-              const canvas = document.createElement('canvas');
-              const maxDim = 1000;
-              let w = img.width;
-              let h = img.height;
-              if (w > maxDim || h > maxDim) {
-                if (w > h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
-                else { w = Math.round(w * (maxDim / h)); h = maxDim; }
-              }
-              canvas.width = w;
-              canvas.height = h;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(img, 0, 0, w, h);
-              const compressed = canvas.toDataURL('image/jpeg', 0.82);
-              currentEditingMediaList.push({ type: 'image', url: compressed });
-              renderAdminMediaTray();
-              showToast("Photo added to product gallery!", "success");
-            };
-            img.src = evt.target.result;
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-      e.target.value = '';
-    }
-
-    function addMediaUrlToProductForm() {
-      const input = document.getElementById('prod-form-img');
-      const url = input.value.trim();
-      if (!url) return;
-      currentEditingMediaList.push({
-        type: isVideoSource(url) ? 'video' : 'image',
-        url
-      });
-      input.value = '';
-      renderAdminMediaTray();
-      showToast("Media link added!", "success");
-    }
-
-    function removeMediaItemFromForm(idx) {
-      currentEditingMediaList.splice(idx, 1);
-      renderAdminMediaTray();
-    }
-
-    function moveMediaItemInForm(idx, dir) {
-      const targetIdx = idx + dir;
-      if (targetIdx < 0 || targetIdx >= currentEditingMediaList.length) return;
-      const temp = currentEditingMediaList[idx];
-      currentEditingMediaList[idx] = currentEditingMediaList[targetIdx];
-      currentEditingMediaList[targetIdx] = temp;
-      renderAdminMediaTray();
-    }
-
-    function toggleAdminProductNameField() {
-      const wrap = document.getElementById('prod-form-title-wrap');
-      if (wrap) {
-        wrap.classList.remove('opacity-40', 'pointer-events-none');
-      }
-    }
-
-    function resetProductForm() {
-      document.getElementById('prod-form-id').value = '';
-      document.getElementById('prod-form-title').value = '';
-      document.getElementById('prod-form-price').value = '';
-      document.getElementById('prod-form-show-name').checked = true;
-      toggleAdminProductNameField();
-      document.getElementById('prod-form-img').value = '';
-      document.getElementById('prod-form-download').value = '';
-      document.getElementById('prod-form-desc').value = '';
-      document.getElementById('prod-form-submit-btn').textContent = 'Save Product to Storefront';
-      currentEditingMediaList = [];
-      renderAdminMediaTray();
-    }
-
-    function editProductInAdmin(prodId) {
-      const prod = storeState.products.find(p => p.id === prodId);
-      if (!prod) return;
-
-      document.getElementById('prod-form-id').value = prod.id;
-      document.getElementById('prod-form-show-name').checked = prod.showName !== false;
-      document.getElementById('prod-form-title').value = prod.title || '';
-      toggleAdminProductNameField();
-      document.getElementById('prod-form-price').value = prod.price;
-      document.getElementById('prod-form-img').value = '';
-      document.getElementById('prod-form-download').value = prod.downloadUrl || '';
-      document.getElementById('prod-form-desc').value = prod.description || '';
-      document.getElementById('prod-form-submit-btn').textContent = 'Update Product in Storefront';
-
-      currentEditingMediaList = JSON.parse(JSON.stringify(getProductMediaList(prod)));
-      renderAdminMediaTray();
-      document.getElementById('prod-form-price').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    async function saveProductForm(e) {
-      e.preventDefault();
-      const idInput = document.getElementById('prod-form-id').value.trim();
-      const showName = document.getElementById('prod-form-show-name').checked;
-      const title = document.getElementById('prod-form-title').value.trim();
-      const price = parseFloat(document.getElementById('prod-form-price').value) || 0;
-      const pendingUrl = document.getElementById('prod-form-img').value.trim();
-      const downloadUrl = document.getElementById('prod-form-download').value.trim();
-      const description = document.getElementById('prod-form-desc').value.trim();
-
-      if (pendingUrl) {
-        currentEditingMediaList.push({
-          type: isVideoSource(pendingUrl) ? 'video' : 'image',
-          url: pendingUrl
-        });
-        document.getElementById('prod-form-img').value = '';
-      }
-
-      if (currentEditingMediaList.length === 0) {
-        showToast("Please upload at least 1 photo or video for the product.", "error");
-        return;
-      }
-
-      const prodId = idInput || ('p_' + Date.now());
-      const primaryMedia = currentEditingMediaList[0].url;
-
-      const newProd = {
-        id: prodId,
-        title,
-        price,
-        showName,
-        badge: JSON.stringify(currentEditingMediaList),
-        image: primaryMedia,
-        media: [...currentEditingMediaList],
-        description,
-        downloadUrl
-      };
-
-      const existingIdx = storeState.products.findIndex(p => p.id === prodId);
-      if (existingIdx >= 0) {
-        storeState.products[existingIdx] = newProd;
-      } else {
-        storeState.products.push(newProd);
-      }
-
-      selectedProduct = newProd;
-      saveLocalBackupState();
-      renderStorefront();
-      renderAdminProductsList();
-      resetProductForm();
-
-      await upsertProductToNeon(newProd, existingIdx >= 0 ? existingIdx : storeState.products.length);
-      showToast("Product saved & synced!", "success");
-    }
-
-    /* =========================================================================
-       NAVIGATION: GALLERY -> PRODUCT DETAILS -> CUSTOMER DETAILS -> PAYMENT
-       ========================================================================= */
-    function renderStorefront() {
-      document.getElementById('brand-name-display').textContent = storeState.brandName;
-      document.getElementById('footer-brand').textContent = `© 2026 ${storeState.brandName} // DIRECT DIGITAL FULFILLMENT`;
-      document.getElementById('merchant-vpa-display').textContent = storeState.merchantUpiId;
-      document.getElementById('catalog-count-label').textContent = `${storeState.products.length} Digital Release(s)`;
-      renderBrandLogo();
-
-      const grid = document.getElementById('catalog-grid');
-      grid.innerHTML = '';
-
-      if (storeState.products.length === 0) {
-        grid.innerHTML = `
-          <div class="col-span-full theme-surface border theme-border rounded-3xl p-10 text-center space-y-2">
-            <div class="text-sm font-bold">No Products Added Yet</div>
-            <p class="text-xs font-mono theme-text-muted">Open the Admin Console (bottom-right icon) to add or sync your products.</p>
-          </div>
-        `;
-        lucide.createIcons();
-        return;
-      }
-
-      if (!selectedProduct || !storeState.products.find(p => p.id === selectedProduct.id)) {
-        selectedProduct = storeState.products[0];
-      }
-
-      storeState.products.forEach((prod) => {
-        const mediaList = getProductMediaList(prod);
-        const coverItem = mediaList[0] || { type: 'image', url: prod.image };
-        const cleanTitle = (prod.title || "").trim();
-        const showNameEnabled = prod.showName !== false && cleanTitle !== "";
-
-        const card = document.createElement('div');
-        card.className = `theme-surface border theme-border hover:border-current rounded-2xl overflow-hidden flex flex-col cursor-pointer transition-all group`;
-        card.onclick = () => openProductDetail(prod.id);
-
-        const mediaHtml = coverItem.type === 'video'
-          ? `<video src="${coverItem.url}" muted loop playsinline autoplay class="w-full h-full object-cover group-hover:scale-105 transition duration-500"></video>`
-          : `<img src="${coverItem.url}" alt="${cleanTitle || 'Product'}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                 onerror="this.src='https://placehold.co/600x400/111111/ffffff?text=PRODUCT'">`;
-
-        const overlayPriceBadgeHtml = `
-          <div class="absolute bottom-3 right-3 px-3 py-1 rounded-xl bg-black/80 backdrop-blur-md border border-white/20 text-white font-mono font-black text-xs sm:text-sm shadow-xl">
-            ₹${prod.price}
-          </div>
-        `;
-
-        const mediaCountBadge = mediaList.length > 1
-          ? `<div class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/75 text-white font-mono text-[10px]">
-               1/${mediaList.length}
-             </div>`
-          : ``;
-
-        const bottomNameSection = showNameEnabled
-          ? `<div class="p-3.5 sm:p-4 border-t theme-border">
-               <h3 class="font-bold text-xs sm:text-sm group-hover:underline line-clamp-1">${cleanTitle}</h3>
-             </div>`
-          : ``;
-
-        card.innerHTML = `
-          <div class="relative aspect-square sm:aspect-[4/3] w-full overflow-hidden bg-zinc-900">
-            ${mediaHtml}
-            ${mediaCountBadge}
-            ${overlayPriceBadgeHtml}
-          </div>
-          ${bottomNameSection}
-        `;
-        grid.appendChild(card);
-      });
-
-      updateActiveProductCheckout();
-      lucide.createIcons();
-    }
-
-    function setActiveDetailMedia(index) {
-      if (!selectedProduct) return;
-      const mediaList = getProductMediaList(selectedProduct);
-      const item = mediaList[index] || mediaList[0];
-      if (!item) return;
-
-      const imgEl = document.getElementById('detail-prod-img');
-      const vidEl = document.getElementById('detail-prod-video');
-
-      if (item.type === 'video') {
-        imgEl.classList.add('hidden');
-        vidEl.src = item.url;
-        vidEl.classList.remove('hidden');
-      } else {
-        vidEl.pause();
-        vidEl.classList.add('hidden');
-        imgEl.src = item.url;
-        imgEl.classList.remove('hidden');
-      }
-    }
-
-    function openProductDetail(prodId) {
-      const prod = storeState.products.find(p => p.id === prodId);
-      if (!prod) return;
-      selectedProduct = prod;
-
-      const mediaList = getProductMediaList(prod);
-      setActiveDetailMedia(0);
-
-      const thumbsWrap = document.getElementById('detail-media-thumbs');
-      thumbsWrap.innerHTML = '';
-      if (mediaList.length > 1) {
-        mediaList.forEach((m, idx) => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = "w-16 h-16 rounded-xl overflow-hidden border theme-border hover:border-current shrink-0 relative bg-zinc-900";
-          btn.onclick = () => setActiveDetailMedia(idx);
-          btn.innerHTML = m.type === 'video'
-            ? `<video src="${m.url}" class="w-full h-full object-cover" muted></video><span class="absolute bottom-1 right-1 text-[8px] font-mono bg-black/80 text-white px-1 rounded">VID</span>`
-            : `<img src="${m.url}" class="w-full h-full object-cover" />`;
-          thumbsWrap.appendChild(btn);
-        });
-        thumbsWrap.classList.remove('hidden');
-      } else {
-        thumbsWrap.classList.add('hidden');
-      }
-
-      const titleEl = document.getElementById('detail-prod-title');
-      const titleWrap = document.getElementById('detail-title-wrap');
-      titleEl.textContent = (prod.title && prod.title.trim() !== '') ? prod.title : 'Digital Product';
-      titleWrap.classList.remove('hidden');
-
-      document.getElementById('detail-prod-price').textContent = prod.price;
-      document.getElementById('detail-overlay-price-val').textContent = prod.price;
-      document.getElementById('detail-price-box').classList.remove('hidden');
-      document.getElementById('detail-price-overlay').classList.remove('hidden');
-
-      document.getElementById('detail-prod-desc').textContent = prod.description || 'Instant digital download unlocked upon payment verification.';
-
-      document.getElementById('gallery-screen').classList.add('hidden');
-      document.getElementById('customer-details-screen').classList.add('hidden');
-      document.getElementById('checkout-workspace').classList.add('hidden');
-      document.getElementById('product-detail-screen').classList.remove('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      lucide.createIcons();
-    }
-
-    function backToGallery() {
-      const vidEl = document.getElementById('detail-prod-video');
-      if (vidEl) vidEl.pause();
-      document.getElementById('product-detail-screen').classList.add('hidden');
-      document.getElementById('customer-details-screen').classList.add('hidden');
-      document.getElementById('checkout-workspace').classList.add('hidden');
-      document.getElementById('gallery-screen').classList.remove('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    /* Customer Details Gate Screen Functions */
-    function switchContactMethod(mode) {
-      currentCustomerInfo.contactMethod = mode;
-      const phoneTab = document.getElementById('tab-contact-phone');
-      const emailTab = document.getElementById('tab-contact-email');
-      const phoneBox = document.getElementById('contact-phone-box');
-      const emailBox = document.getElementById('contact-email-box');
-
-      if (mode === 'phone') {
-        phoneTab.className = "py-2 px-3 rounded-lg font-mono text-xs font-bold transition theme-accent-btn flex items-center justify-center gap-1.5";
-        emailTab.className = "py-2 px-3 rounded-lg font-mono text-xs font-bold transition theme-text-muted flex items-center justify-center gap-1.5";
-        phoneBox.classList.remove('hidden');
-        emailBox.classList.add('hidden');
-      } else {
-        emailTab.className = "py-2 px-3 rounded-lg font-mono text-xs font-bold transition theme-accent-btn flex items-center justify-center gap-1.5";
-        phoneTab.className = "py-2 px-3 rounded-lg font-mono text-xs font-bold transition theme-text-muted flex items-center justify-center gap-1.5";
-        emailBox.classList.remove('hidden');
-        phoneBox.classList.add('hidden');
-      }
-    }
-
-    function openCustomerDetailsScreen() {
-      const vidEl = document.getElementById('detail-prod-video');
-      if (vidEl) vidEl.pause();
-
-      if (selectedProduct) {
-        const mediaList = getProductMediaList(selectedProduct);
-        const firstImg = mediaList.find(m => m.type === 'image') || mediaList[0] || { url: selectedProduct.image };
-        document.getElementById('cust-step-prod-img').src = firstImg.url;
-        document.getElementById('cust-step-prod-title').textContent = selectedProduct.title || 'Digital Asset';
-        document.getElementById('cust-step-prod-price').textContent = selectedProduct.price;
-      }
-
-      document.getElementById('gallery-screen').classList.add('hidden');
-      document.getElementById('product-detail-screen').classList.add('hidden');
-      document.getElementById('checkout-workspace').classList.add('hidden');
-      document.getElementById('customer-details-screen').classList.remove('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      lucide.createIcons();
-    }
-
-    async function submitCustomerDetailsAndProceed(e) {
-      e.preventDefault();
-      const nameVal = document.getElementById('cust-name-input').value.trim();
-      if (!nameVal) {
-        showToast("Please enter your full name.", "error");
-        document.getElementById('cust-name-input').focus();
-        return;
-      }
-
-      let contactVal = "";
-      if (currentCustomerInfo.contactMethod === 'phone') {
-        const code = document.getElementById('cust-country-code').value.trim() || "+91";
-        const phoneRaw = document.getElementById('cust-phone-input').value.trim();
-        if (!phoneRaw || phoneRaw.replace(/\D/g, '').length < 5) {
-          showToast("Please enter a valid phone number.", "error");
-          document.getElementById('cust-phone-input').focus();
-          return;
-        }
-        contactVal = phoneRaw.startsWith('+') ? phoneRaw : `${code} ${phoneRaw}`;
-      } else {
-        const emailRaw = document.getElementById('cust-email-input').value.trim();
-        if (!emailRaw || !emailRaw.includes('@')) {
-          showToast("Please enter a valid email address.", "error");
-          document.getElementById('cust-email-input').focus();
-          return;
-        }
-        contactVal = emailRaw;
-      }
-
-      currentCustomerInfo.name = nameVal;
-      currentCustomerInfo.contactValue = contactVal;
-
-      proceedToPaymentScreen();
-    }
-
-    function proceedToPaymentScreen() {
-      const vidEl = document.getElementById('detail-prod-video');
-      if (vidEl) vidEl.pause();
-      currentOrderId = generateOrderId();
-      document.getElementById('order-id-badge').textContent = currentOrderId;
-      document.getElementById('unlocked-card').classList.add('hidden');
-      document.getElementById('email-match-banner').classList.add('hidden');
-      document.getElementById('utr-used-banner')?.classList.add('hidden');
-      document.getElementById('utr-input').value = '';
-      document.getElementById('utr-counter').textContent = '0 / 12 digits';
-
-      const buyerSummary = document.getElementById('active-buyer-summary');
-      if (buyerSummary) {
-        buyerSummary.textContent = `${currentCustomerInfo.name || 'Customer'} • ${currentCustomerInfo.contactValue || ''}`;
-      }
-
-      updateActiveProductCheckout();
-      saveCustomerOrderSubmission("", "awaiting_payment");
-
-      document.getElementById('product-detail-screen').classList.add('hidden');
-      document.getElementById('customer-details-screen').classList.add('hidden');
-      document.getElementById('c
+      fr.onerror = rej; fr.readAsDataURL(file);
+    });
+  }
+  function onProductFiles(e) {
+    var files = Array.prototype.slice.call(e.target.files || []);
+    Promise.all(files.map(function (f) { return toDataUrl(f, 900, 'image/jpeg'); })).then(function (urls) {
+      formImgs = formImgs.concat(urls); drawFormImgs(); toast(urls.length + ' image(s) added');
+    }, function () { toast('Could not read that image'); });
+  }
+  function onLogoFile(e) {
+    var f = (e.target.files || [])[0]; if (!f) return;
+    toDataUrl(f, 256, 'image/png').then(function (u) { S.brandLogo = u; saveDraft(); renderStore(); toast('Logo updated'); drawAdmin(); }, function () { toast('Could not read that image'); });
+  }
+  function keepFormValues() { return { t: ($('p-title') || {}).value, p: ($('p-price') || {}).value, d: ($('p-desc') || {}).value }; }
+  function restoreFormValues(v) { if (!v) return; $('p-title').value = v.t || ''; $('p-price').value = v.p || ''; $('p-desc').value = v.d || ''; }
+  actions.addurl = function () {
+    var u = ($('p-url').value || '').trim(); if (!u) return;
+    formImgs.push(u); $('p-url').value = ''; drawFormImgs();
+  };
+  actions.rmimg = function (t) { formImgs.splice(Number(t.getAttribute('data-i')), 1); drawFormImgs(); };
+  actions.edit = function (t) {
+    editingId = t.getAttribute('data-id'); fillProductForm.done = false;
+    drawAdmin(); var f = $('pform'); if (f && f.scrollIntoView) f.scrollIntoView();
+  };
+  actions['cancel-edit'] = function () { editingId = null; formImgs = []; drawAdmin(); };
+  actions.del = function (t) {
+    var id = t.getAttribute('data-id');
+    if (!window.confirm('Delete this product?')) return;
+    S.products = S.products.filter(function (p) { return p.id !== id; });
+    if (editingId === id) { editingId = null; formImgs = []; }
+    saveDraft(); renderStore(); drawAdmin(); toast('Product deleted');
+  };
+  submits.product = function () {
+    var title = $('p-title').value.trim(), price = Number($('p-price').value);
+    if (!title || !(price >= 0)) { toast('Enter title and price'); return; }
+    var rec = { id: editingId || uid(), title: title, price: price, description: $('p-desc').value, images: formImgs.slice() };
+    var idx = S.products.findIndex(function (p) { return p.id === rec.id; });
+    if (idx >= 0) S.products[idx] = rec; else S.products.push(rec);
+    editingId = null; formImgs = [];
+    saveDraft(); renderStore(); drawAdmin(); toast('Product saved');
+  };
+  submits.settings = function () {
+    S.brandName = $('s-brand').value.trim() || 'My Store';
+    var lu = $('s-logo').value.trim(); if (lu) S.brandLogo = lu;
+    S.theme = $('s-theme').value === 'dark' ? 'dark' : 'light';
+    S.merchantUpiId = $('s-upi').value.trim();
+    S.merchantName = $('s-mname').value.trim();
+    S.whatsappNumber = $('s-wa').value.replace(/[^\d]/g, '');
+    S.adminPin = $('s-pin').value.trim() || '2689';
+    saveDraft(); renderStore(); drawAdmin(); toast('Settings saved');
+  };
+  actions.discard = function () {
+    if (!window.confirm('Discard all unpublished changes in this browser?')) return;
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+    location.reload();
+  };
+
+  /* ---------- publish: build updated HTML ---------- */
+  function buildHtml() {
+    return fetch(location.href.split('#')[0], { cache: 'no-store' }).then(function (r) {
+      if (!r.ok) throw new Error('could not read page, HTTP ' + r.status);
+      return r.text();
+    }).then(function (html) {
+      var re = new RegExp('(<scr' + 'ipt id="store-data"[^>]*>)[\\s\\S]*?(<\\/scr' + 'ipt>)');
+      if (!re.test(html)) throw new Error('data block not found');
+      var json = JSON.stringify({ stamp: Date.now(), state: S }).replace(/</g, '\\u003c');
+      return html.replace(re, function (m, a, b) { return a + json + b; });
+    });
+  }
+  actions.dl = function () {
+    buildHtml().then(function (html) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+      a.download = 'index.html'; document.body.appendChild(a); a.click(); a.remove();
+      toast('Downloaded index.html. Upload it to GitHub to publish.');
+    }, function (e) { toast('Open your live https site to export (' + (e.message || e) + ')'); });
+  };
+  actions.cp = function () {
+    buildHtml().then(function (html) { return navigator.clipboard.writeText(html); }).then(
+      function () { toast('HTML copied. Paste it into index.html on GitHub.'); },
+      function (e) { toast('Could not copy. Try Download HTML.'); });
+  };
+
+  window.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
+  renderStore();
+  function checkHash() { if (location.hash === '#admin') { openPin(); } }
+  window.addEventListener('hashchange', checkHash); checkHash();
+})();
+</script>
+</body>
+</html>
