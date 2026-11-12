@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest" defer></script>
+  <script src="https://unpkg.com/lucide@latest" defer onerror="var f=document.createElement('script');f.src='https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js';document.head.appendChild(f);"></script>
 
   <!-- QRCode.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
@@ -1355,8 +1355,9 @@
             };
           });
           saveLocalBackupState();
-        } else if (!dbUnreachable && storeState.products && storeState.products.length > 0) {
-          // If local backup has custom products that haven't synced to Neon yet, push them now
+        } else if (!dbUnreachable) {
+          // Database reachable but empty: drop the built-in sample products, push only real local ones
+          storeState.products = (storeState.products || []).filter(pr => !['p1', 'p2', 'p3'].includes(String(pr.id)));
           for (let i = 0; i < storeState.products.length; i++) {
             upsertProductToNeon(storeState.products[i], i);
           }
@@ -2054,10 +2055,4 @@
       saveCustomerOrderSubmission("", "awaiting_payment");
 
       document.getElementById('product-detail-screen').classList.add('hidden');
-      document.getElementById('customer-details-screen').classList.add('hidden');
-      document.getElementById('checkout-workspace').classList.remove('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      lucide.createIcons();
-    }
-
-    function backToProductDetail() {
+      document.getElementById('customer-details-screen').classLi
