@@ -929,10 +929,10 @@
     const ADMIN_PIN = "2689";
 
     /* Direct Neon PostgreSQL Connection Credentials */
-    const NEON_HOST = "ep-dry-haze-bd7bcwa9-pooler.c-8.us-east-2.aws.neon.tech";
-    const NEON_DIRECT_HOST = "ep-dry-haze-bd7bcwa9.c-8.us-east-2.aws.neon.tech";
-    const NEON_CONNECTION_URI = `postgresql://neondb_owner:npg_8a4HBvhwAWSF@${NEON_HOST}/neondb?sslmode=require`;
-    const NEON_DIRECT_URI = `postgresql://neondb_owner:npg_8a4HBvhwAWSF@${NEON_DIRECT_HOST}/neondb?sslmode=require`;
+    const NEON_HOST = "ep-weathered-dew-bdpgx13t-pooler.c-8.us-east-2.aws.neon.tech";
+    const NEON_DIRECT_HOST = "ep-weathered-dew-bdpgx13t.c-8.us-east-2.aws.neon.tech";
+    const NEON_CONNECTION_URI = `postgresql://neondb_owner:npg_kvqMbFc4UVD7@${NEON_HOST}/neondb?sslmode=require`;
+    const NEON_DIRECT_URI = `postgresql://neondb_owner:npg_kvqMbFc4UVD7@${NEON_DIRECT_HOST}/neondb?sslmode=require`;
     let neonHttpSql = null;
     let neonWsPool = null;
     let isRealNeonConnected = false;
@@ -1359,6 +1359,24 @@
       }).catch(() => {});
     }
 
+    let dbUnreachable = false;
+    function showDbBanner(show) {
+      let el = document.getElementById('db-offline-banner');
+      if (!show) { if (el) el.remove(); return; }
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'db-offline-banner';
+        el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:9000;background:#111;color:#fff;border:1px solid #444;border-radius:14px;padding:12px 14px;font:13px/1.4 monospace;display:flex;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 8px 30px rgba(0,0,0,.35)';
+        el.innerHTML = '<span>Can\'t reach the store database. Products may be missing or out of date.</span><button id="db-retry-btn" style="background:#fff;color:#000;border-radius:10px;padding:8px 12px;font-weight:700;white-space:nowrap">Retry</button>';
+        document.body.appendChild(el);
+        document.getElementById('db-retry-btn').onclick = async () => {
+          const b = document.getElementById('db-retry-btn'); b.textContent = '...';
+          neonWsPool = null; neonHttpSql = null;
+          await initAndSyncNeonDatabase();
+        };
+      }
+    }
+
     async function initAndSyncNeonDatabase() {
       loadLocalBackupState();
       applyTheme(storeState.theme, false);
@@ -1368,10 +1386,17 @@
         await initNeonDriver();
         updateBootLoader(65, "Loading Store...");
 
-        let [settingsRes, prodRes] = await Promise.all([
-          executeNeonSql(`SELECT * FROM store_settings WHERE id = 1 LIMIT 1;`),
-          executeNeonSql(`SELECT * FROM store_products ORDER BY sort_order ASC;`)
-        ]);
+        let settingsRes, prodRes;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          [settingsRes, prodRes] = await Promise.all([
+            executeNeonSql(`SELECT * FROM store_settings WHERE id = 1 LIMIT 1;`),
+            executeNeonSql(`SELECT * FROM store_products ORDER BY sort_order ASC;`)
+          ]);
+          if (prodRes.ok || settingsRes.ok) break;
+          updateBootLoader(65, "Retrying connection...");
+          await new Promise(r => setTimeout(r, 1200));
+        }
+        dbUnreachable = !(prodRes.ok || settingsRes.ok);
 
         if (!prodRes.ok || !prodRes.rows || prodRes.rows.length === 0) {
           const fallbackProdRes = await executeNeonSql(`SELECT * FROM store_products;`);
@@ -1435,7 +1460,7 @@
             };
           });
           saveLocalBackupState();
-        } else if (storeState.products && storeState.products.length > 0) {
+        } else if (!dbUnreachable && storeState.products && storeState.products.length > 0) {
           // If local backup has custom products that haven't synced to Neon yet, push them now
           for (let i = 0; i < storeState.products.length; i++) {
             upsertProductToNeon(storeState.products[i], i);
@@ -1446,7 +1471,10 @@
         renderStorefront();
         updateBootLoader(100, "Ready");
         hideBootLoader();
+        showDbBanner(dbUnreachable);
       } catch (err) {
+        dbUnreachable = true;
+        showDbBanner(true);
         applyTheme(storeState.theme, false);
         renderStorefront();
         updateBootLoader(100, "Ready");
